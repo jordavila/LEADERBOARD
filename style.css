@@ -25,7 +25,7 @@ h2 {
 /* Fila de jugador */
 .entry {
   display: grid;
-  grid-template-columns: 56px 1fr auto auto ; /* IMG | NOMBRE | TOTAL | MATCH ROTANDO 90px 110px*/
+  grid-template-columns: 56px auto auto auto; /* IMG | NOMBRE | TOTAL | MATCH ROTANDO 1fr 90px 110px*/
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
@@ -98,4 +98,5 @@ h2 {
   .score { font-size: 1.05rem; }
   .last-match { font-size: 0.95rem; min-width: 88px; }
 }
+
 
