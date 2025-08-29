@@ -1,17 +1,100 @@
-.last-match {
-  color: #f1c40f;
-  font-size: 1.2em;
-  margin-left: 15px;
-  min-width: 70px;
-  text-align: center;
-  transition: all 0.6s ease;
+/* Fondo y tipografía */
+body {
+  background-color: rgba(0, 0, 0, 0);
+  font-family: 'Segoe UI', sans-serif;
+  color: white;
+  padding: 20px;
 }
 
+h2 {
+  text-align: center;
+  color: #69c9b9;
+  margin-bottom: 10px;
+}
+
+/* Contenedor del leaderboard */
+.leaderboard {
+  max-width: 720px;
+  margin: auto;
+  border: 2px solid #69c9b9;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: rgba(17, 17, 17, 0.35);
+}
+
+/* Fila de jugador */
+.entry {
+  display: grid;
+  grid-template-columns: 56px 1fr 90px 110px; /* IMG | NOMBRE | TOTAL | MATCH ROTANDO */
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background-color: rgba(34, 34, 34, 0.85);
+  border-bottom: 1px solid #444;
+}
+
+.entry:nth-child(even) {
+  background-color: rgba(26, 26, 26, 0.92);
+}
+
+/* Imagen del jugador */
+.player-img {
+  height: 48px;
+  width: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #111;
+}
+
+/* Nombre del jugador */
+.name {
+  font-weight: 700;
+  font-size: 1.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Total de kills */
+.score {
+  color: #69c9b9;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Columna de match rotando */
+.last-match {
+  font-size: 1.05rem;
+  text-align: center;
+  min-width: 100px;
+  border: 1px solid #3b3b3b;
+  border-radius: 8px;
+  padding: 4px 8px;
+  color: #f1c40f;
+  background-color: rgba(0,0,0,0.15);
+}
+
+/* Efecto visual cuando cambia el match mostrado */
 .highlight {
-  animation: flash 1s;
+  animation: flash 900ms ease;
 }
 
 @keyframes flash {
-  0%   { background-color: #2ecc71; color: black; }
-  100% { background-color: transparent; color: #f1c40f; }
+  0%   { background-color: #2ecc71; color: #0b0b0b; transform: scale(1.06); }
+  60%  { background-color: rgba(46, 204, 113, 0.35); color: #0b0b0b; }
+  100% { background-color: rgba(0,0,0,0.15); color: #f1c40f; transform: scale(1); }
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+  .entry {
+    grid-template-columns: 44px 1fr 70px 88px;
+    gap: 8px;
+  }
+  .player-img { height: 40px; width: 40px; }
+  .name { font-size: 1rem; }
+  .score { font-size: 1.05rem; }
+  .last-match { font-size: 0.95rem; min-width: 88px; }
 }
