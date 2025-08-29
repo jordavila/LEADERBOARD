@@ -14,7 +14,7 @@ h2 {
 
 /* Contenedor del leaderboard */
 .leaderboard {
-  max-width: 500px;
+  max-width: 350px;
   margin: auto;
   border: 2px solid #69c9b9;
   border-radius: 12px;
@@ -24,8 +24,7 @@ h2 {
 
 /* Fila de jugador */
 .entry {
-  display: grid;
-  grid-template-columns: 56px 1fr auto auto; /* IMG | NOMBRE | TOTAL | MATCH ROTANDO 1fr 90px 110px*/
+  display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
@@ -54,6 +53,8 @@ h2 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex:1;
+  min-width:0;
 }
 
 /* Total de kills */
@@ -62,18 +63,20 @@ h2 {
   font-size: 1.2rem;
   font-weight: 700;
   text-align: right;
+  flex-shrink:0;
 }
 
 /* Columna de match rotando */
 .last-match {
   font-size: 1.05rem;
   text-align: center;
-  min-width: 100px;
+  min-width: 50px;
   border: 1px solid #3b3b3b;
   border-radius: 8px;
   padding: 4px 8px;
   color: #f1c40f;
   background-color: rgba(0,0,0,0.15);
+  flex-shrink:0;
 }
 
 /* Efecto visual cuando cambia el match mostrado */
@@ -98,7 +101,6 @@ h2 {
   .score { font-size: 1.05rem; }
   .last-match { font-size: 0.95rem; min-width: 88px; }
 }
-
 
 
 
