@@ -1,5 +1,5 @@
 body {
-  background-color: rgba(0, 0, 0, 0); /* completamente transparente */
+  background-color: rgba(0, 0, 0, 0);
   font-family: 'Segoe UI', sans-serif;
   color: white;
   padding: 20px;
@@ -12,7 +12,7 @@ h2 {
 }
 
 .leaderboard {
-  max-width: 200px;
+  max-width: 300px;
   margin: auto;
   border: 2px solid #69c9b9;
   border-radius: 10px;
@@ -22,8 +22,9 @@ h2 {
 
 .entry {
   display: flex;
+  align-items: center; /* Centrar imagen y texto verticalmente */
   justify-content: space-between;
-  padding: 7px 15px;
+  padding: 10px 15px;
   background-color: rgba(34, 34, 34, .80);
   border-bottom: 1px solid #444;
 }
@@ -32,12 +33,21 @@ h2 {
   background-color: rgba(26, 26, 26, 0.90);
 }
 
+.player-img {
+  height: 100%; /*28px;  Aumentado para llenar más alto de fila */
+  max-height: 50px;
+  width: auto; /* Mantener proporción */
+  margin-right: 5px;
+}
+
 .name {
   font-weight: bold;
-  font-size: 1.1em;
+  font-size: 1.4em;
+  flex-grow: 1; /* Ocupa espacio sobrante */
 }
 
 .score {
   color: #69c9b9;
-  font-size: 1.1em;
+  font-size: 1.4em;
 }
+
