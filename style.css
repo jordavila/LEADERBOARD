@@ -14,7 +14,7 @@ h2 {
 
 /* Contenedor del leaderboard */
 .leaderboard {
-  max-width: 350px;
+  max-width: 400px;
   margin: auto;
   border: 2px solid #69c9b9;
   border-radius: 12px;
@@ -101,6 +101,7 @@ h2 {
   .score { font-size: 1.05rem; }
   .last-match { font-size: 0.95rem; min-width: 88px; }
 }
+
 
 
 
