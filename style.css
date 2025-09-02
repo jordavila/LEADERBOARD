@@ -26,6 +26,7 @@ h2 {
 .entry {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 10px 14px;
   background-color: rgba(34, 34, 34, 0.85);
@@ -101,6 +102,7 @@ h2 {
   .score { font-size: 1.05rem; }
   .last-match { font-size: 0.95rem; min-width: 88px; }
 }
+
 
 
 
