@@ -71,13 +71,87 @@ h2 {
 .last-match {
   font-size: 1.05rem;
   text-align: center;
-  min-width: 50px;
+  min-width: 116px;
   border: 1px solid #3b3b3b;
   border-radius: 8px;
-  padding: 4px 8px;
+  padding: 4px 6px 5px;
   color: #f1c40f;
   background-color: rgba(0,0,0,0.15);
   flex-shrink:0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.match-main {
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tag-row {
+  min-height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+
+
+/* Etiquetas modernas para WIN/KILLER */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.win-match {
+  border-color: #a07100;
+  color: #ffd86a;
+  background: linear-gradient(120deg, rgba(70, 44, 0, 0.65), rgba(24, 16, 0, 0.75));
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.35);
+}
+
+.win-tag {
+  color: #2b1800;
+  background: linear-gradient(135deg, #ffe58a, #ffbe0b);
+  box-shadow: 0 0 8px rgba(255, 199, 51, 0.6);
+}
+
+.killer-row .last-match {
+  position: relative;
+  overflow: hidden;
+  border-color: #67e8f9;
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.35), 0 0 12px rgba(34, 211, 238, 0.35);
+}
+
+.killer-row .last-match::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.55), transparent 75%);
+  animation: killerShine 550ms ease;
+  pointer-events: none;
+}
+
+.killer-tag {
+  color: #062531;
+  background: linear-gradient(135deg, #8be9f6, #22d3ee);
+  box-shadow: 0 0 7px rgba(56, 189, 248, 0.5);
+}
+
+@keyframes killerShine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
 }
 
 /* Efecto visual cuando cambia el match mostrado */
@@ -94,15 +168,15 @@ h2 {
 /* Responsive */
 @media (max-width: 520px) {
   .entry {
-    grid-template-columns: 44px 1fr 70px 88px;
     gap: 8px;
+    padding: 9px 10px;
   }
   .player-img { height: 40px; width: 40px; }
-  .name { font-size: 1rem; }
+  .name { font-size: 0.96rem; }
   .score { font-size: 1.05rem; }
-  .last-match { font-size: 0.95rem; min-width: 88px; }
+  .last-match { font-size: 0.88rem; min-width: 102px; padding: 3px 5px 4px; }
+  .tag { font-size: 0.58rem; padding: 2px 6px; }
 }
-
 
 
 
