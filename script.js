@@ -14,6 +14,8 @@ let rowsMatches = {};          // { nombre_normalizado: [m1, m2, ...] }
 let maxMatches = 0;
 let currentMatchIndex = 0;
 let lastShownMatch = -1;
+let winMarkers = [];          // [true/false] por match, desde fila 5 de la tabla
+const MAX_MATCHES = 24;
 
 // helpers
 function parseGviz(text) {
@@ -58,36 +60,51 @@ async function cargarDatos() {
     }));
     rowsTotal.sort((a, b) => b.score - a.score);
 
-    // Hoja2: buscar las primeras 4 filas con nombre (robusto frente a índices vacíos)
+    // Hoja2: tomar las primeras 4 filas de jugadores (tabla 1..4)
     const j2 = await fetchSheet(url2);
     rowsMatches = {};
+    winMarkers = [];
     const allRows = j2.table.rows || [];
-    let found = 0;
-    for (let i = 0; i < allRows.length && found < 4; i++) {
+
+    // Filas 1..4 de la tabla: jugadores (en la hoja son 2..5 por encabezado)
+    for (let i = 0; i < 4; i++) {
       const row = allRows[i];
       if (!row) continue;
-      const nameRaw = row.c[0]?.v;
-      if (!nameRaw) continue; // saltar filas sin nombre
+      const nameRaw = row.c?.[0]?.v;
+      if (!nameRaw) continue;
+
       const name = nameRaw.toString().trim();
-      // Leer columnas B..Y => indices 1..24
       const vals = [];
-      for (let col = 1; col <= 24; col++) {
-        const cell = row.c[col];
+      for (let col = 1; col <= MAX_MATCHES; col++) {
+        const cell = row.c?.[col];
         if (cell?.v !== null && cell?.v !== undefined && String(cell.v).trim() !== "") {
           const parsed = parseInt(cell.v, 10);
           vals.push(Number.isNaN(parsed) ? cell.v : parsed);
         }
       }
-      if (vals.length > 0) {
-        rowsMatches[normalizeName(name)] = vals;
-      }
-      found++;
+      rowsMatches[normalizeName(name)] = vals;
     }
 
-    // calcular maxMatches
-    const lengths = Object.values(rowsMatches).map(a => a.length);
-    maxMatches = lengths.length ? Math.max(...lengths) : 0;
-    if (maxMatches > 0) currentMatchIndex = currentMatchIndex % Math.max(1, maxMatches);
+    // Fila 5 de la tabla (en hoja: fila 6): marca de WIN por match si hay cualquier caracter
+    const winRow = allRows[4];
+    for (let col = 1; col <= MAX_MATCHES; col++) {
+      const raw = winRow?.c?.[col]?.v;
+      winMarkers.push(raw !== null && raw !== undefined && String(raw).trim() !== "");
+    }
+
+    // calcular máximo de partidas reales con datos (kills o WIN), limitado a 24
+    let lastMatchWithData = -1;
+    for (let i = 0; i < MAX_MATCHES; i++) {
+      const hasWin = !!winMarkers[i];
+      const hasKill = Object.values(rowsMatches).some(arr => {
+        const v = arr[i];
+        return v !== null && v !== undefined && String(v).trim() !== "";
+      });
+      if (hasWin || hasKill) lastMatchWithData = i;
+    }
+
+    maxMatches = lastMatchWithData + 1;
+    if (maxMatches > 0) currentMatchIndex = currentMatchIndex % maxMatches;
     else currentMatchIndex = 0;
 
     // (opcional) debug: ver qué filas se leyeron de Sheet2
@@ -105,8 +122,17 @@ function renderLeaderboard() {
   container.innerHTML = "";
   if (!rowsTotal.length) return;
 
-  const top = rowsTotal.slice(0, 10);
-  const matchToShow = maxMatches > 0 ? (currentMatchIndex % maxMatches) : -1;
+  const top = rowsTotal.slice(0, 4);
+  const hasMatchData = maxMatches > 0;
+  const matchToShow = hasMatchData ? (currentMatchIndex % maxMatches) : -1;
+  const isWinMatch = matchToShow >= 0 && !!winMarkers[matchToShow];
+
+  const matchKills = top.map(entry => {
+    const arr = rowsMatches[normalizeName(entry.name)] || [];
+    const val = arr[matchToShow];
+    return Number.isFinite(Number(val)) ? Number(val) : null;
+  });
+  const bestKill = matchKills.some(v => v !== null) ? Math.max(...matchKills.filter(v => v !== null)) : null;
 
   top.forEach(entry => {
     const name = entry.name;
@@ -129,30 +155,57 @@ function renderLeaderboard() {
     scoreDiv.className = "score";
     scoreDiv.textContent = score;
 
-    const matchDiv = document.createElement("div");
-    matchDiv.className = "last-match";
-
     const arr = rowsMatches[normalizeName(name)] || [];
-    if (matchToShow >= 0 && arr.length > 0) {
-      matchDiv.textContent = `M${matchToShow + 1}: ${arr[matchToShow]}`;
-    } else {
-      matchDiv.textContent = "";
-    }
+    let matchDiv = null;
+    if (hasMatchData) {
+      matchDiv = document.createElement("div");
+      matchDiv.className = "last-match";
+      const currentKill = arr[matchToShow];
 
-    if (matchToShow !== lastShownMatch) {
-      matchDiv.classList.add("highlight");
-      const remove = () => {
-        matchDiv.classList.remove("highlight");
-        matchDiv.removeEventListener("animationend", remove);
-      };
-      matchDiv.addEventListener("animationend", remove);
-      setTimeout(() => matchDiv.classList.remove("highlight"), 1100);
+      const matchMain = document.createElement("div");
+      matchMain.className = "match-main";
+      matchMain.textContent = `M${matchToShow + 1}: ${currentKill ?? "—"}`;
+      matchDiv.appendChild(matchMain);
+
+      const tagRow = document.createElement("div");
+      tagRow.className = "tag-row";
+
+      if (isWinMatch) {
+        matchDiv.classList.add("win-match");
+        const winBadge = document.createElement("span");
+        winBadge.className = "tag win-tag";
+        winBadge.textContent = "W";
+        tagRow.appendChild(winBadge);
+      }
+
+      const numericKill = Number.isFinite(Number(currentKill)) ? Number(currentKill) : null;
+      if (bestKill !== null && numericKill !== null && numericKill === bestKill) {
+        rowEl.classList.add("killer-row");
+        const killerBadge = document.createElement("span");
+        killerBadge.className = "tag killer-tag";
+        killerBadge.textContent = "K";
+        tagRow.appendChild(killerBadge);
+      }
+
+      if (tagRow.childElementCount > 0) {
+        matchDiv.appendChild(tagRow);
+      }
+
+      if (matchToShow !== lastShownMatch) {
+        matchDiv.classList.add("highlight");
+        const remove = () => {
+          matchDiv.classList.remove("highlight");
+          matchDiv.removeEventListener("animationend", remove);
+        };
+        matchDiv.addEventListener("animationend", remove);
+        setTimeout(() => matchDiv.classList.remove("highlight"), 1100);
+      }
     }
 
     rowEl.appendChild(img);
     rowEl.appendChild(nameDiv);
     rowEl.appendChild(scoreDiv);
-    rowEl.appendChild(matchDiv);
+    if (matchDiv) rowEl.appendChild(matchDiv);
 
     container.appendChild(rowEl);
   });
