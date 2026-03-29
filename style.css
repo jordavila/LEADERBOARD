@@ -50,12 +50,15 @@ h2 {
 /* Nombre del jugador */
 .name {
   font-weight: 700;
-  font-size: 1.15rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 1.02rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   flex:1;
-  min-width:0;
+  min-width: 0;
 }
 
 /* Total de kills */
@@ -69,12 +72,12 @@ h2 {
 
 /* Columna de match rotando */
 .last-match {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   text-align: center;
-  min-width: 116px;
+  min-width: 80px;
   border: 1px solid #3b3b3b;
   border-radius: 8px;
-  padding: 4px 6px 5px;
+  padding: 3px 5px 4px;
   color: #f1c40f;
   background-color: rgba(0,0,0,0.15);
   flex-shrink:0;
@@ -105,9 +108,9 @@ h2 {
   align-items: center;
   justify-content: center;
   margin-left: 0;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 999px;
-  font-size: 0.65rem;
+  font-size: 0.58rem;
   letter-spacing: 0.06em;
   font-weight: 800;
   line-height: 1;
@@ -170,14 +173,14 @@ h2 {
   .entry {
     gap: 8px;
     padding: 9px 10px;
+    align-items: center;
   }
   .player-img { height: 40px; width: 40px; }
-  .name { font-size: 0.96rem; }
-  .score { font-size: 1.05rem; }
-  .last-match { font-size: 0.88rem; min-width: 102px; padding: 3px 5px 4px; }
-  .tag { font-size: 0.58rem; padding: 2px 6px; }
+  .name { font-size: 0.9rem; line-height: 1.08; }
+  .score { font-size: 0.98rem; }
+  .last-match { font-size: 0.8rem; min-width: 70px; padding: 3px 4px; gap: 3px; }
+  .tag { font-size: 0.52rem; padding: 2px 5px; }
 }
-
 
 
 
