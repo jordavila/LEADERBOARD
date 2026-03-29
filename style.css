@@ -71,13 +71,30 @@ h2 {
 .last-match {
   font-size: 1.05rem;
   text-align: center;
-  min-width: 50px;
+  min-width: 116px;
   border: 1px solid #3b3b3b;
   border-radius: 8px;
-  padding: 4px 8px;
+  padding: 4px 6px 5px;
   color: #f1c40f;
   background-color: rgba(0,0,0,0.15);
   flex-shrink:0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.match-main {
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tag-row {
+  min-height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
 }
 
 
@@ -87,7 +104,7 @@ h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 6px;
+  margin-left: 0;
   padding: 2px 7px;
   border-radius: 999px;
   font-size: 0.65rem;
@@ -155,11 +172,11 @@ h2 {
     padding: 9px 10px;
   }
   .player-img { height: 40px; width: 40px; }
-  .name { font-size: 1rem; }
+  .name { font-size: 0.96rem; }
   .score { font-size: 1.05rem; }
-  .last-match { font-size: 0.95rem; min-width: 88px; }
+  .last-match { font-size: 0.88rem; min-width: 102px; padding: 3px 5px 4px; }
+  .tag { font-size: 0.58rem; padding: 2px 6px; }
 }
-
 
 
 

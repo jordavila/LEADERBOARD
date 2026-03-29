@@ -15,6 +15,7 @@ let maxMatches = 0;
 let currentMatchIndex = 0;
 let lastShownMatch = -1;
 let winMarkers = [];          // [true/false] por match, desde fila 5 de la tabla
+const MAX_MATCHES = 24;
 
 // helpers
 function parseGviz(text) {
@@ -74,7 +75,7 @@ async function cargarDatos() {
 
       const name = nameRaw.toString().trim();
       const vals = [];
-      for (let col = 1; col <= 24; col++) {
+      for (let col = 1; col <= MAX_MATCHES; col++) {
         const cell = row.c?.[col];
         if (cell?.v !== null && cell?.v !== undefined && String(cell.v).trim() !== "") {
           const parsed = parseInt(cell.v, 10);
@@ -86,15 +87,24 @@ async function cargarDatos() {
 
     // Fila 5 de la tabla (en hoja: fila 6): marca de WIN por match si hay cualquier caracter
     const winRow = allRows[4];
-    for (let col = 1; col <= 24; col++) {
+    for (let col = 1; col <= MAX_MATCHES; col++) {
       const raw = winRow?.c?.[col]?.v;
       winMarkers.push(raw !== null && raw !== undefined && String(raw).trim() !== "");
     }
 
-    // calcular maxMatches usando kills y fila WIN
-    const lengths = [...Object.values(rowsMatches).map(a => a.length), winMarkers.length];
-    maxMatches = lengths.length ? Math.max(...lengths) : 0;
-    if (maxMatches > 0) currentMatchIndex = currentMatchIndex % Math.max(1, maxMatches);
+    // calcular máximo de partidas reales con datos (kills o WIN), limitado a 24
+    let lastMatchWithData = -1;
+    for (let i = 0; i < MAX_MATCHES; i++) {
+      const hasWin = !!winMarkers[i];
+      const hasKill = Object.values(rowsMatches).some(arr => {
+        const v = arr[i];
+        return v !== null && v !== undefined && String(v).trim() !== "";
+      });
+      if (hasWin || hasKill) lastMatchWithData = i;
+    }
+
+    maxMatches = lastMatchWithData + 1;
+    if (maxMatches > 0) currentMatchIndex = currentMatchIndex % maxMatches;
     else currentMatchIndex = 0;
 
     // (opcional) debug: ver qué filas se leyeron de Sheet2
@@ -113,7 +123,8 @@ function renderLeaderboard() {
   if (!rowsTotal.length) return;
 
   const top = rowsTotal.slice(0, 4);
-  const matchToShow = maxMatches > 0 ? (currentMatchIndex % maxMatches) : -1;
+  const hasMatchData = maxMatches > 0;
+  const matchToShow = hasMatchData ? (currentMatchIndex % maxMatches) : -1;
   const isWinMatch = matchToShow >= 0 && !!winMarkers[matchToShow];
 
   const matchKills = top.map(entry => {
@@ -144,20 +155,27 @@ function renderLeaderboard() {
     scoreDiv.className = "score";
     scoreDiv.textContent = score;
 
-    const matchDiv = document.createElement("div");
-    matchDiv.className = "last-match";
-
     const arr = rowsMatches[normalizeName(name)] || [];
-    if (matchToShow >= 0 && arr.length > 0) {
+    let matchDiv = null;
+    if (hasMatchData) {
+      matchDiv = document.createElement("div");
+      matchDiv.className = "last-match";
       const currentKill = arr[matchToShow];
-      matchDiv.textContent = `M${matchToShow + 1}: ${currentKill}`;
+
+      const matchMain = document.createElement("div");
+      matchMain.className = "match-main";
+      matchMain.textContent = `M${matchToShow + 1}: ${currentKill ?? "—"}`;
+      matchDiv.appendChild(matchMain);
+
+      const tagRow = document.createElement("div");
+      tagRow.className = "tag-row";
 
       if (isWinMatch) {
         matchDiv.classList.add("win-match");
         const winBadge = document.createElement("span");
         winBadge.className = "tag win-tag";
         winBadge.textContent = "WIN";
-        matchDiv.appendChild(winBadge);
+        tagRow.appendChild(winBadge);
       }
 
       const numericKill = Number.isFinite(Number(currentKill)) ? Number(currentKill) : null;
@@ -166,26 +184,28 @@ function renderLeaderboard() {
         const killerBadge = document.createElement("span");
         killerBadge.className = "tag killer-tag";
         killerBadge.textContent = "KILLER";
-        matchDiv.appendChild(killerBadge);
+        tagRow.appendChild(killerBadge);
       }
-    } else {
-      matchDiv.textContent = "";
-    }
 
-    if (matchToShow !== lastShownMatch) {
-      matchDiv.classList.add("highlight");
-      const remove = () => {
-        matchDiv.classList.remove("highlight");
-        matchDiv.removeEventListener("animationend", remove);
-      };
-      matchDiv.addEventListener("animationend", remove);
-      setTimeout(() => matchDiv.classList.remove("highlight"), 1100);
+      if (tagRow.childElementCount > 0) {
+        matchDiv.appendChild(tagRow);
+      }
+
+      if (matchToShow !== lastShownMatch) {
+        matchDiv.classList.add("highlight");
+        const remove = () => {
+          matchDiv.classList.remove("highlight");
+          matchDiv.removeEventListener("animationend", remove);
+        };
+        matchDiv.addEventListener("animationend", remove);
+        setTimeout(() => matchDiv.classList.remove("highlight"), 1100);
+      }
     }
 
     rowEl.appendChild(img);
     rowEl.appendChild(nameDiv);
     rowEl.appendChild(scoreDiv);
-    rowEl.appendChild(matchDiv);
+    if (matchDiv) rowEl.appendChild(matchDiv);
 
     container.appendChild(rowEl);
   });
