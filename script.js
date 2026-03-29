@@ -14,6 +14,7 @@ let rowsMatches = {};          // { nombre_normalizado: [m1, m2, ...] }
 let maxMatches = 0;
 let currentMatchIndex = 0;
 let lastShownMatch = -1;
+let winMarkers = [];          // [true/false] por match, desde fila 5 de la tabla
 
 // helpers
 function parseGviz(text) {
@@ -58,34 +59,40 @@ async function cargarDatos() {
     }));
     rowsTotal.sort((a, b) => b.score - a.score);
 
-    // Hoja2: buscar las primeras 4 filas con nombre (robusto frente a índices vacíos)
+    // Hoja2: tomar las primeras 4 filas de jugadores (tabla 1..4)
     const j2 = await fetchSheet(url2);
     rowsMatches = {};
+    winMarkers = [];
     const allRows = j2.table.rows || [];
-    let found = 0;
-    for (let i = 0; i < allRows.length && found < 4; i++) {
+
+    // Filas 1..4 de la tabla: jugadores (en la hoja son 2..5 por encabezado)
+    for (let i = 0; i < 4; i++) {
       const row = allRows[i];
       if (!row) continue;
-      const nameRaw = row.c[0]?.v;
-      if (!nameRaw) continue; // saltar filas sin nombre
+      const nameRaw = row.c?.[0]?.v;
+      if (!nameRaw) continue;
+
       const name = nameRaw.toString().trim();
-      // Leer columnas B..Y => indices 1..24
       const vals = [];
       for (let col = 1; col <= 24; col++) {
-        const cell = row.c[col];
+        const cell = row.c?.[col];
         if (cell?.v !== null && cell?.v !== undefined && String(cell.v).trim() !== "") {
           const parsed = parseInt(cell.v, 10);
           vals.push(Number.isNaN(parsed) ? cell.v : parsed);
         }
       }
-      if (vals.length > 0) {
-        rowsMatches[normalizeName(name)] = vals;
-      }
-      found++;
+      rowsMatches[normalizeName(name)] = vals;
     }
 
-    // calcular maxMatches
-    const lengths = Object.values(rowsMatches).map(a => a.length);
+    // Fila 5 de la tabla (en hoja: fila 6): marca de WIN por match si hay cualquier caracter
+    const winRow = allRows[4];
+    for (let col = 1; col <= 24; col++) {
+      const raw = winRow?.c?.[col]?.v;
+      winMarkers.push(raw !== null && raw !== undefined && String(raw).trim() !== "");
+    }
+
+    // calcular maxMatches usando kills y fila WIN
+    const lengths = [...Object.values(rowsMatches).map(a => a.length), winMarkers.length];
     maxMatches = lengths.length ? Math.max(...lengths) : 0;
     if (maxMatches > 0) currentMatchIndex = currentMatchIndex % Math.max(1, maxMatches);
     else currentMatchIndex = 0;
@@ -105,8 +112,16 @@ function renderLeaderboard() {
   container.innerHTML = "";
   if (!rowsTotal.length) return;
 
-  const top = rowsTotal.slice(0, 10);
+  const top = rowsTotal.slice(0, 4);
   const matchToShow = maxMatches > 0 ? (currentMatchIndex % maxMatches) : -1;
+  const isWinMatch = matchToShow >= 0 && !!winMarkers[matchToShow];
+
+  const matchKills = top.map(entry => {
+    const arr = rowsMatches[normalizeName(entry.name)] || [];
+    const val = arr[matchToShow];
+    return Number.isFinite(Number(val)) ? Number(val) : null;
+  });
+  const bestKill = matchKills.some(v => v !== null) ? Math.max(...matchKills.filter(v => v !== null)) : null;
 
   top.forEach(entry => {
     const name = entry.name;
@@ -134,7 +149,25 @@ function renderLeaderboard() {
 
     const arr = rowsMatches[normalizeName(name)] || [];
     if (matchToShow >= 0 && arr.length > 0) {
-      matchDiv.textContent = `M${matchToShow + 1}: ${arr[matchToShow]}`;
+      const currentKill = arr[matchToShow];
+      matchDiv.textContent = `M${matchToShow + 1}: ${currentKill}`;
+
+      if (isWinMatch) {
+        matchDiv.classList.add("win-match");
+        const winBadge = document.createElement("span");
+        winBadge.className = "tag win-tag";
+        winBadge.textContent = "WIN";
+        matchDiv.appendChild(winBadge);
+      }
+
+      const numericKill = Number.isFinite(Number(currentKill)) ? Number(currentKill) : null;
+      if (bestKill !== null && numericKill !== null && numericKill === bestKill) {
+        rowEl.classList.add("killer-row");
+        const killerBadge = document.createElement("span");
+        killerBadge.className = "tag killer-tag";
+        killerBadge.textContent = "KILLER";
+        matchDiv.appendChild(killerBadge);
+      }
     } else {
       matchDiv.textContent = "";
     }
