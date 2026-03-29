@@ -174,7 +174,7 @@ function renderLeaderboard() {
         matchDiv.classList.add("win-match");
         const winBadge = document.createElement("span");
         winBadge.className = "tag win-tag";
-        winBadge.textContent = "W🏆";
+        winBadge.textContent = " 🏆 ";
         tagRow.appendChild(winBadge);
       }
 
@@ -183,7 +183,7 @@ function renderLeaderboard() {
         rowEl.classList.add("killer-row");
         const killerBadge = document.createElement("span");
         killerBadge.className = "tag killer-tag";
-        killerBadge.textContent = "K💀";
+        killerBadge.textContent = " 💀 ";
         tagRow.appendChild(killerBadge);
       }
 
