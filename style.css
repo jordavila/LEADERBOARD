@@ -1,6 +1,6 @@
 /* Fondo y tipografía */
 body {
-  background-color: rgba(0, 0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.95);
   font-family: 'Segoe UI', sans-serif;
   color: white;
   padding: 20px;
@@ -28,7 +28,7 @@ h3 {
   margin: 14px auto;
   border: 2px solid #69c9b9;
   border-radius: 12px;
-  background-color: rgba(17, 17, 17, 0.35);
+  background-color: rgba( 0, 0, 0, 0.8);
   padding: 12px;
 }
 
