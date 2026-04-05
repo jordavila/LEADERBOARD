@@ -11,6 +11,7 @@ const container = document.getElementById("leaderboard");
 const dashboardEl = document.getElementById("dashboard");
 const summaryEl = document.getElementById("summary-table");
 const matchesEl = document.getElementById("matches-tables");
+const heatmapEl = document.getElementById("heatmap");
 
 // estado
 let rowsTotal = []; // [{name, score}] de Sheet1 (jugadores activos)
@@ -301,8 +302,57 @@ function renderPlayerSummaryTable() {
 }
 
 function renderMatchesHeatmap() {
+function buildMatchesTable(start, end, title) {
+  const labels = compactLabels.slice(start, end);
+  const winSlice = winMarkers.slice(start, end);
+
+  const thead = `
+    <tr>
+      <th>Jugador</th>
+      ${labels.map((l, i) => `<th class="${winSlice[i] ? "match-win-col" : ""}">${l}${winSlice[i] ? " 🏆" : ""}</th>`).join("")}
+    </tr>
+  `;
+
+  const body = playerStats.map(s => {
+    const vals = s.series.slice(start, end);
+    return `
+      <tr>
+        <td>${s.player}</td>
+        ${vals.map((v, i) => `<td class="${winSlice[i] ? "match-win-cell" : ""}">${format1(v)}</td>`).join("")}
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <section class="match-table-block">
+      <h3>${title}</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>${thead}</thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderMatchesTables() {
   if (maxMatches === 0) {
     matchesEl.innerHTML = "<h3>Resumen de Partidas</h3><p class='empty-note'>Sin partidas completas para mostrar.</p>";
+    return;
+  }
+
+  const first = buildMatchesTable(0, Math.min(12, maxMatches), "Resumen de Partidas (M1-M12)");
+  const second = maxMatches > 12
+    ? buildMatchesTable(12, Math.min(24, maxMatches), "Resumen de Partidas (M13-M24)")
+    : "";
+
+  matchesEl.innerHTML = `<h2 class="section-title">Resumen de Partidas</h2>${first}${second}`;
+}
+
+function renderHeatmap() {
+  if (maxMatches === 0) {
+    heatmapEl.innerHTML = "";
     return;
   }
 
@@ -321,6 +371,8 @@ function renderMatchesHeatmap() {
 
   matchesEl.innerHTML = `
     <h3>Resumen de Partidas</h3>
+  heatmapEl.innerHTML = `
+    <h3>Heatmap de Kills por Jugador y Partida</h3>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Jugador</th>${header}</tr></thead>
@@ -373,6 +425,9 @@ function renderCharts() {
         backgroundColor: colors,
         borderColor: "#ffffff",
         borderWidth: 1.2
+        backgroundColor: "rgba(105, 201, 185, 0.7)",
+        borderColor: "#69c9b9",
+        borderWidth: 1
       }]
     },
     options: baseOpts
@@ -388,6 +443,9 @@ function renderCharts() {
         backgroundColor: colors,
         borderColor: "#ffffff",
         borderWidth: 1.2
+        backgroundColor: "rgba(241, 196, 15, 0.7)",
+        borderColor: "#f1c40f",
+        borderWidth: 1
       }]
     },
     options: baseOpts
@@ -407,6 +465,8 @@ function renderCharts() {
         pointBackgroundColor: "#ffffff",
         pointBorderColor: colors[idx % colors.length],
         pointRadius: 3
+        borderColor: ["#69c9b9", "#f1c40f", "#8be9f6", "#f39c12"][idx % 4],
+        pointRadius: 2
       }))
     },
     options: baseOpts
@@ -422,6 +482,7 @@ function renderCharts() {
         backgroundColor: colors,
         borderColor: "#111",
         borderWidth: 1
+        backgroundColor: ["#69c9b9", "#f1c40f", "#8be9f6", "#f39c12"]
       }]
     },
     options: {
@@ -491,6 +552,7 @@ function renderLeaderboard() {
         const winBadge = document.createElement("span");
         winBadge.className = "tag win-tag";
         winBadge.textContent = "🏆";
+        winBadge.textContent = "W🏆";
         tagRow.appendChild(winBadge);
       }
 
@@ -508,6 +570,10 @@ function renderLeaderboard() {
         peaceBadge.className = "tag peace-tag";
         peaceBadge.textContent = "☮️";
         tagRow.appendChild(peaceBadge);
+      }
+
+        killerBadge.textContent = "K";
+        tagRow.appendChild(killerBadge);
       }
 
       if (tagRow.childElementCount > 0) {
@@ -583,6 +649,8 @@ async function cargarDatos() {
     renderDashboard();
     renderPlayerSummaryTable();
     renderMatchesHeatmap();
+    renderMatchesTables();
+    renderHeatmap();
     renderCharts();
   } catch (err) {
     container.innerHTML = `<div style="color:red;padding:10px">⚠️ Error cargando datos: ${err.message}</div>`;
