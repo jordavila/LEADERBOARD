@@ -172,6 +172,12 @@ h3 {
   box-shadow: 0 0 7px rgba(56, 189, 248, 0.5);
 }
 
+.peace-tag {
+  color: #10220f;
+  background: linear-gradient(135deg, #c8ffb2, #78e08f);
+  box-shadow: 0 0 7px rgba(120, 224, 143, 0.45);
+}
+
 @keyframes killerShine {
   from { transform: translateX(-120%); }
   to { transform: translateX(120%); }

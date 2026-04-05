@@ -11,7 +11,6 @@ const container = document.getElementById("leaderboard");
 const dashboardEl = document.getElementById("dashboard");
 const summaryEl = document.getElementById("summary-table");
 const matchesEl = document.getElementById("matches-tables");
-const heatmapEl = document.getElementById("heatmap");
 
 // estado
 let rowsTotal = []; // [{name, score}] de Sheet1 (jugadores activos)
@@ -30,6 +29,7 @@ let totalKillsChart = null;
 let avgKillsChart = null;
 let trendChart = null;
 let ledChart = null;
+const PLAYER_COLORS = ["#ff3b30", "#00a2ff", "#00d26a", "#ffd60a"];
 
 function parseGviz(text) {
   return JSON.parse(text.substr(47).slice(0, -2));
@@ -192,6 +192,20 @@ function computeStats() {
     return { names, kills: maxKill };
   })();
 
+  const pacifist = (() => {
+    if (!playerStats.length || matchesPlayed === 0) return { names: "N/A", zeroMatches: 0 };
+    let maxZeros = -1;
+    playerStats.forEach(s => {
+      const zeroCount = s.series.filter(v => v === 0).length;
+      if (zeroCount > maxZeros) maxZeros = zeroCount;
+    });
+    const names = playerStats
+      .filter(s => s.series.filter(v => v === 0).length === maxZeros)
+      .map(s => s.player)
+      .join(", ");
+    return { names, zeroMatches: maxZeros };
+  })();
+
   const sharpeValid = playerStats.filter(s => s.sharpe !== null && Number.isFinite(s.sharpe));
   const bestSharpe = sharpeValid.length
     ? sharpeValid.reduce((a, b) => (b.sharpe > a.sharpe ? b : a))
@@ -211,6 +225,7 @@ function computeStats() {
     globalAvgKills,
     bloodiest,
     recordKill,
+    pacifist,
     bestSharpePlayer: bestSharpe ? `${bestSharpe.player} (${format1(bestSharpe.sharpe)})` : "N/A",
     worstSharpePlayer: worstSharpe ? `${worstSharpe.player} (${format1(worstSharpe.sharpe)})` : "N/A",
     winRate
@@ -229,6 +244,7 @@ function renderDashboard() {
     ["Kills Totales", dashboardStats.teamTotalKills],
     ["Mejor Jugador", dashboardStats.bestPlayer],
     ["Record Kill", `${dashboardStats.recordKill.names} (${format1(dashboardStats.recordKill.kills)})`],
+    ["Pacifista", `${dashboardStats.pacifist.names} (${format1(dashboardStats.pacifist.zeroMatches)} partidas sin kills)`],
     ["Win Rate", `${format1(dashboardStats.winRate)}%`],
     ["Kill Promedio Global", format1(dashboardStats.globalAvgKills)],
     ["Partida más sangrienta", `${dashboardStats.bloodiest.label} (${format1(dashboardStats.bloodiest.kills)})`],
@@ -284,57 +300,9 @@ function renderPlayerSummaryTable() {
   `;
 }
 
-function buildMatchesTable(start, end, title) {
-  const labels = compactLabels.slice(start, end);
-  const winSlice = winMarkers.slice(start, end);
-
-  const thead = `
-    <tr>
-      <th>Jugador</th>
-      ${labels.map((l, i) => `<th class="${winSlice[i] ? "match-win-col" : ""}">${l}${winSlice[i] ? " 🏆" : ""}</th>`).join("")}
-    </tr>
-  `;
-
-  const body = playerStats.map(s => {
-    const vals = s.series.slice(start, end);
-    return `
-      <tr>
-        <td>${s.player}</td>
-        ${vals.map((v, i) => `<td class="${winSlice[i] ? "match-win-cell" : ""}">${format1(v)}</td>`).join("")}
-      </tr>
-    `;
-  }).join("");
-
-  return `
-    <section class="match-table-block">
-      <h3>${title}</h3>
-      <div class="table-wrap">
-        <table>
-          <thead>${thead}</thead>
-          <tbody>${body}</tbody>
-        </table>
-      </div>
-    </section>
-  `;
-}
-
-function renderMatchesTables() {
+function renderMatchesHeatmap() {
   if (maxMatches === 0) {
     matchesEl.innerHTML = "<h3>Resumen de Partidas</h3><p class='empty-note'>Sin partidas completas para mostrar.</p>";
-    return;
-  }
-
-  const first = buildMatchesTable(0, Math.min(12, maxMatches), "Resumen de Partidas (M1-M12)");
-  const second = maxMatches > 12
-    ? buildMatchesTable(12, Math.min(24, maxMatches), "Resumen de Partidas (M13-M24)")
-    : "";
-
-  matchesEl.innerHTML = `<h2 class="section-title">Resumen de Partidas</h2>${first}${second}`;
-}
-
-function renderHeatmap() {
-  if (maxMatches === 0) {
-    heatmapEl.innerHTML = "";
     return;
   }
 
@@ -351,8 +319,8 @@ function renderHeatmap() {
     return `<tr><td>${s.player}</td>${cells}</tr>`;
   }).join("");
 
-  heatmapEl.innerHTML = `
-    <h3>Heatmap de Kills por Jugador y Partida</h3>
+  matchesEl.innerHTML = `
+    <h3>Resumen de Partidas</h3>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Jugador</th>${header}</tr></thead>
@@ -378,6 +346,7 @@ function renderCharts() {
   destroyCharts();
 
   const labels = playerStats.map(s => s.player);
+  const colors = labels.map((_, idx) => PLAYER_COLORS[idx % PLAYER_COLORS.length]);
   const totals = playerStats.map(s => Number(format1(s.totalKills)));
   const avgs = playerStats.map(s => Number(format1(s.avg)));
   const led = playerStats.map(s => Number(format1(s.ledMatches)));
@@ -401,9 +370,9 @@ function renderCharts() {
       datasets: [{
         label: "Kills Totales",
         data: totals,
-        backgroundColor: "rgba(105, 201, 185, 0.7)",
-        borderColor: "#69c9b9",
-        borderWidth: 1
+        backgroundColor: colors,
+        borderColor: "#ffffff",
+        borderWidth: 1.2
       }]
     },
     options: baseOpts
@@ -416,9 +385,9 @@ function renderCharts() {
       datasets: [{
         label: "Kills Promedio",
         data: avgs,
-        backgroundColor: "rgba(241, 196, 15, 0.7)",
-        borderColor: "#f1c40f",
-        borderWidth: 1
+        backgroundColor: colors,
+        borderColor: "#ffffff",
+        borderWidth: 1.2
       }]
     },
     options: baseOpts
@@ -434,8 +403,10 @@ function renderCharts() {
         tension: 0.25,
         fill: false,
         borderWidth: 2,
-        borderColor: ["#69c9b9", "#f1c40f", "#8be9f6", "#f39c12"][idx % 4],
-        pointRadius: 2
+        borderColor: colors[idx % colors.length],
+        pointBackgroundColor: "#ffffff",
+        pointBorderColor: colors[idx % colors.length],
+        pointRadius: 3
       }))
     },
     options: baseOpts
@@ -448,7 +419,9 @@ function renderCharts() {
       datasets: [{
         label: "Partidas lideradas",
         data: led,
-        backgroundColor: ["#69c9b9", "#f1c40f", "#8be9f6", "#f39c12"]
+        backgroundColor: colors,
+        borderColor: "#111",
+        borderWidth: 1
       }]
     },
     options: {
@@ -517,7 +490,7 @@ function renderLeaderboard() {
         matchDiv.classList.add("win-match");
         const winBadge = document.createElement("span");
         winBadge.className = "tag win-tag";
-        winBadge.textContent = "W🏆";
+        winBadge.textContent = "🏆";
         tagRow.appendChild(winBadge);
       }
 
@@ -526,8 +499,15 @@ function renderLeaderboard() {
         rowEl.classList.add("killer-row");
         const killerBadge = document.createElement("span");
         killerBadge.className = "tag killer-tag";
-        killerBadge.textContent = "K";
+        killerBadge.textContent = "💀";
         tagRow.appendChild(killerBadge);
+      }
+
+      if (numericKill === 0) {
+        const peaceBadge = document.createElement("span");
+        peaceBadge.className = "tag peace-tag";
+        peaceBadge.textContent = "☮️";
+        tagRow.appendChild(peaceBadge);
       }
 
       if (tagRow.childElementCount > 0) {
@@ -602,8 +582,7 @@ async function cargarDatos() {
     renderLeaderboard();
     renderDashboard();
     renderPlayerSummaryTable();
-    renderMatchesTables();
-    renderHeatmap();
+    renderMatchesHeatmap();
     renderCharts();
   } catch (err) {
     container.innerHTML = `<div style="color:red;padding:10px">⚠️ Error cargando datos: ${err.message}</div>`;
