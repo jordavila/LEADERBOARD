@@ -204,11 +204,11 @@ function renderDashboard() {
     ["Partidas Jugadas", dashboardStats.matchesPlayed],
     ["Victorias", dashboardStats.wins],
     ["Kills Totales", dashboardStats.teamTotalKills],
-    ["Mejor Jugador", dashboardStats.bestPlayer],
     ["Win Rate", `${format1(dashboardStats.winRate)}%`],
     ["Kill Promedio Global", format1(dashboardStats.globalAvgKills)],
     ["Partida más sangrienta", `${dashboardStats.bloodiest.label} (${format1(dashboardStats.bloodiest.kills)})`],
-    ["Más consistente", dashboardStats.mostConsistent]
+    ["Más consistente", dashboardStats.mostConsistent],
+    ["Killer del Grupo", dashboardStats.bestPlayer]
   ];
 
   dashboardEl.innerHTML = cards
