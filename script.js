@@ -10,7 +10,7 @@ const MAX_MATCHES = 24;
 const container = document.getElementById("leaderboard");
 const dashboardEl = document.getElementById("dashboard");
 const summaryEl = document.getElementById("summary-table");
-const matchesEl = document.getElementById("matches-tables");
+const heatmapEl = document.getElementById("heatmap");
 
 // estado
 let rowsTotal = []; // [{name, score}] de Sheet1 (jugadores activos)
@@ -32,7 +32,9 @@ let ledChart = null;
 const PLAYER_COLORS = ["#ff3b30", "#00a2ff", "#00d26a", "#ffd60a"];
 
 function parseGviz(text) {
-  return JSON.parse(text.substr(47).slice(0, -2));
+  const match = text.match(/google\\.visualization\\.Query\\.setResponse\\((.*)\\);?$/s);
+  if (!match?.[1]) throw new Error("Respuesta GViz inválida");
+  return JSON.parse(match[1]);
 }
 
 function normalizeName(n) {
@@ -300,9 +302,9 @@ function renderPlayerSummaryTable() {
   `;
 }
 
-function renderMatchesHeatmap() {
+function renderHeatmap() {
   if (maxMatches === 0) {
-    matchesEl.innerHTML = "<h3>Resumen de Partidas</h3><p class='empty-note'>Sin partidas completas para mostrar.</p>";
+    heatmapEl.innerHTML = "<h3>Heatmap de Partidas</h3><p class='empty-note'>Sin partidas completas para mostrar.</p>";
     return;
   }
 
@@ -319,8 +321,8 @@ function renderMatchesHeatmap() {
     return `<tr><td>${s.player}</td>${cells}</tr>`;
   }).join("");
 
-  matchesEl.innerHTML = `
-    <h3>Resumen de Partidas</h3>
+  heatmapEl.innerHTML = `
+    <h3>Heatmap de Partidas</h3>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Jugador</th>${header}</tr></thead>
@@ -341,7 +343,14 @@ function destroyCharts() {
 }
 
 function renderCharts() {
-  if (typeof Chart === "undefined") return;
+  if (typeof Chart === "undefined") {
+    document.querySelectorAll(".chart-card").forEach(card => {
+      if (!card.querySelector(".empty-note")) {
+        card.insertAdjacentHTML("beforeend", "<p class='empty-note'>No se pudo cargar Chart.js.</p>");
+      }
+    });
+    return;
+  }
 
   destroyCharts();
 
@@ -476,7 +485,7 @@ function renderLeaderboard() {
     if (hasMatchData) {
       matchDiv = document.createElement("div");
       matchDiv.className = "last-match";
-      const currentKill = arr[matchToShow];
+      const currentKill = Number.isFinite(Number(arr[matchToShow])) ? Number(arr[matchToShow]) : 0;
 
       const matchMain = document.createElement("div");
       matchMain.className = "match-main";
@@ -582,7 +591,7 @@ async function cargarDatos() {
     renderLeaderboard();
     renderDashboard();
     renderPlayerSummaryTable();
-    renderMatchesHeatmap();
+    renderHeatmap();
     renderCharts();
   } catch (err) {
     container.innerHTML = `<div style="color:red;padding:10px">⚠️ Error cargando datos: ${err.message}</div>`;
