@@ -171,9 +171,26 @@ function computeStats() {
     return { label: compactLabels[bestIdx], kills: bestKills };
   })();
 
-  const bestPlayer = playerStats.length
-    ? playerStats.reduce((a, b) => (b.totalKills > a.totalKills ? b : a)).player
-    : "N/A";
+  const bestPlayerStat = playerStats.length
+    ? playerStats.reduce((a, b) => (b.totalKills > a.totalKills ? b : a))
+    : null;
+  const bestPlayer = bestPlayerStat ? `${bestPlayerStat.player} (${format1(bestPlayerStat.totalKills)})` : "N/A";
+
+  const recordKill = (() => {
+    if (!playerStats.length || matchesPlayed === 0) return { names: "N/A", kills: 0 };
+    let maxKill = -1;
+    playerStats.forEach(s => {
+      s.series.forEach(v => {
+        if (v > maxKill) maxKill = v;
+      });
+    });
+    if (maxKill < 0) return { names: "N/A", kills: 0 };
+    const names = playerStats
+      .filter(s => s.series.some(v => v === maxKill))
+      .map(s => s.player)
+      .join(", ");
+    return { names, kills: maxKill };
+  })();
 
   const sharpeValid = playerStats.filter(s => s.sharpe !== null && Number.isFinite(s.sharpe));
   const bestSharpe = sharpeValid.length
@@ -193,6 +210,7 @@ function computeStats() {
     bestPlayer,
     globalAvgKills,
     bloodiest,
+    recordKill,
     bestSharpePlayer: bestSharpe ? `${bestSharpe.player} (${format1(bestSharpe.sharpe)})` : "N/A",
     worstSharpePlayer: worstSharpe ? `${worstSharpe.player} (${format1(worstSharpe.sharpe)})` : "N/A",
     winRate
@@ -210,6 +228,7 @@ function renderDashboard() {
     ["Victorias", dashboardStats.wins],
     ["Kills Totales", dashboardStats.teamTotalKills],
     ["Mejor Jugador", dashboardStats.bestPlayer],
+    ["Record Kill", `${dashboardStats.recordKill.names} (${format1(dashboardStats.recordKill.kills)})`],
     ["Win Rate", `${format1(dashboardStats.winRate)}%`],
     ["Kill Promedio Global", format1(dashboardStats.globalAvgKills)],
     ["Partida más sangrienta", `${dashboardStats.bloodiest.label} (${format1(dashboardStats.bloodiest.kills)})`],
