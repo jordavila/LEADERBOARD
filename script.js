@@ -32,9 +32,15 @@ let ledChart = null;
 const PLAYER_COLORS = ["#ff3b30", "#00a2ff", "#00d26a", "#ffd60a"];
 
 function parseGviz(text) {
-  const match = text.match(/google\\.visualization\\.Query\\.setResponse\\((.*)\\);?$/s);
-  if (!match?.[1]) throw new Error("Respuesta GViz inválida");
-  return JSON.parse(match[1]);
+  // Mantener compatibilidad con la respuesta estándar de GViz
+  // y tolerar variaciones menores del wrapper.
+  try {
+    return JSON.parse(text.substr(47).slice(0, -2));
+  } catch {
+    const match = text.match(/setResponse\\((.*)\\);/s);
+    if (!match?.[1]) throw new Error("Respuesta GViz inválida");
+    return JSON.parse(match[1]);
+  }
 }
 
 function normalizeName(n) {
