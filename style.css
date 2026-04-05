@@ -104,7 +104,15 @@ h3 {
   background-color: #0e1319;
   flex-shrink:0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.match-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 22px;
+  align-items: center;
   gap: 4px;
 }
 
@@ -113,13 +121,13 @@ h3 {
   line-height: 1.1;
 }
 
-.tag-row {
-  min-height: 18px;
+.badge-col {
+  min-height: 26px;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 4px;
-  flex-wrap: nowrap;
+  gap: 2px;
 }
 
 /* Etiquetas modernas para W/K */
@@ -128,12 +136,18 @@ h3 {
   align-items: center;
   justify-content: center;
   margin-left: 0;
-  padding: 2px 6px;
+  min-width: 18px;
+  min-height: 14px;
+  padding: 1px 4px;
   border-radius: 999px;
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   letter-spacing: 0.06em;
   font-weight: 800;
   line-height: 1;
+}
+
+.tag-empty {
+  opacity: 0;
 }
 
 .win-match {
@@ -173,9 +187,9 @@ h3 {
 }
 
 .peace-tag {
-  color: #10220f;
-  background: linear-gradient(135deg, #c8ffb2, #78e08f);
-  box-shadow: 0 0 7px rgba(120, 224, 143, 0.45);
+  color: #f5e9ff;
+  background: linear-gradient(135deg, #a86dff, #8e44ff);
+  box-shadow: 0 0 7px rgba(158, 95, 255, 0.55);
 }
 
 @keyframes killerShine {
@@ -307,7 +321,9 @@ tr:nth-child(even) td {
   .name { font-size: 0.9rem; line-height: 1.08; }
   .score { font-size: 0.98rem; }
   .last-match { font-size: 0.8rem; min-width: 70px; padding: 3px 4px; gap: 3px; }
-  .tag { font-size: 0.52rem; padding: 2px 5px; }
+  .match-layout { grid-template-columns: 1fr 20px; gap: 3px; }
+  .badge-col { min-height: 24px; }
+  .tag { font-size: 0.58rem; min-width: 16px; min-height: 13px; padding: 1px 3px; }
 
   .panel-block { padding: 10px; }
   table { font-size: 0.82rem; }

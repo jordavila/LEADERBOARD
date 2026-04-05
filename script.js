@@ -58,6 +58,11 @@ function format1(value) {
   return Number(value).toFixed(1);
 }
 
+function formatInt(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "N/A";
+  return Math.round(Number(value)).toString();
+}
+
 function attachImageWithFallback(img, rawName) {
   const candidates = [
     `${rawName}.png`,
@@ -229,7 +234,7 @@ function computeStats() {
     matchesPlayed,
     wins,
     teamTotalKills,
-    bestPlayer,
+    bestPlayer: bestPlayerStat ? `${bestPlayerStat.player} (${formatInt(bestPlayerStat.totalKills)})` : "N/A",
     globalAvgKills,
     bloodiest,
     recordKill,
@@ -247,15 +252,15 @@ function renderDashboard() {
   }
 
   const cards = [
-    ["Partidas Jugadas", dashboardStats.matchesPlayed],
-    ["Victorias", dashboardStats.wins],
-    ["Kills Totales", dashboardStats.teamTotalKills],
+    ["Partidas Jugadas", formatInt(dashboardStats.matchesPlayed)],
+    ["Victorias", formatInt(dashboardStats.wins)],
+    ["Kills Totales", formatInt(dashboardStats.teamTotalKills)],
     ["Mejor Jugador", dashboardStats.bestPlayer],
-    ["Record Kill", `${dashboardStats.recordKill.names} (${format1(dashboardStats.recordKill.kills)})`],
-    ["Pacifista", `${dashboardStats.pacifist.names} (${format1(dashboardStats.pacifist.zeroMatches)} partidas sin kills)`],
+    ["Record Kill", `${dashboardStats.recordKill.names} (${formatInt(dashboardStats.recordKill.kills)})`],
+    ["Pacifista", `${dashboardStats.pacifist.names} (${formatInt(dashboardStats.pacifist.zeroMatches)})`],
     ["Win Rate", `${format1(dashboardStats.winRate)}%`],
     ["Kill Promedio Global", format1(dashboardStats.globalAvgKills)],
-    ["Partida más sangrienta", `${dashboardStats.bloodiest.label} (${format1(dashboardStats.bloodiest.kills)})`],
+    ["Partida más sangrienta", `${dashboardStats.bloodiest.label} (${formatInt(dashboardStats.bloodiest.kills)})`],
     ["Mayor aporte (Sharpe)", dashboardStats.bestSharpePlayer],
     ["Menor aporte (Sharpe)", dashboardStats.worstSharpePlayer]
   ];
@@ -286,11 +291,11 @@ function renderPlayerSummaryTable() {
   const rows = playerStats.map(s => `
     <tr>
       <td>${s.player}</td>
-      <td>${s.position}</td>
-      <td>${format1(s.totalKills)}</td>
+      <td>${formatInt(s.position)}</td>
+      <td>${formatInt(s.totalKills)}</td>
       <td>${format1(s.avg)}</td>
-      <td>${format1(s.bestMatch)}</td>
-      <td>${format1(s.ledMatches)}</td>
+      <td>${formatInt(s.bestMatch)}</td>
+      <td>${formatInt(s.ledMatches)}</td>
       <td>${format1(s.pctTotal)}%</td>
       <td>${format1(s.std)}</td>
       <td>${s.sharpe === null ? "N/A" : format1(s.sharpe)}</td>
@@ -322,7 +327,7 @@ function renderHeatmap() {
     const cells = s.series.map(v => {
       const ratio = maxVal > 0 ? (v / maxVal) : 0;
       const alpha = (0.15 + ratio * 0.7).toFixed(2);
-      return `<td style="background: rgba(105, 201, 185, ${alpha})">${format1(v)}</td>`;
+      return `<td style="background: rgba(105, 201, 185, ${alpha})">${formatInt(v)}</td>`;
     }).join("");
     return `<tr><td>${s.player}</td>${cells}</tr>`;
   }).join("");
@@ -495,39 +500,48 @@ function renderLeaderboard() {
 
       const matchMain = document.createElement("div");
       matchMain.className = "match-main";
-      matchMain.textContent = `${compactLabels[matchToShow] ?? "M1"}: ${currentKill ?? "—"}`;
-      matchDiv.appendChild(matchMain);
+      matchMain.textContent = `${compactLabels[matchToShow] ?? "M1"}: ${formatInt(currentKill)}`;
 
-      const tagRow = document.createElement("div");
-      tagRow.className = "tag-row";
+      const layout = document.createElement("div");
+      layout.className = "match-layout";
+
+      const badgeCol = document.createElement("div");
+      badgeCol.className = "badge-col";
 
       if (isWinMatch) {
         matchDiv.classList.add("win-match");
         const winBadge = document.createElement("span");
         winBadge.className = "tag win-tag";
         winBadge.textContent = "🏆";
-        tagRow.appendChild(winBadge);
+        badgeCol.appendChild(winBadge);
       }
 
       const numericKill = Number.isFinite(Number(currentKill)) ? Number(currentKill) : null;
-      if (bestKill !== null && numericKill !== null && numericKill === bestKill) {
+      if (bestKill !== null && numericKill !== null && numericKill > 0 && numericKill === bestKill) {
         rowEl.classList.add("killer-row");
         const killerBadge = document.createElement("span");
         killerBadge.className = "tag killer-tag";
         killerBadge.textContent = "💀";
-        tagRow.appendChild(killerBadge);
+        badgeCol.appendChild(killerBadge);
       }
 
       if (numericKill === 0) {
         const peaceBadge = document.createElement("span");
         peaceBadge.className = "tag peace-tag";
         peaceBadge.textContent = "☮️";
-        tagRow.appendChild(peaceBadge);
+        badgeCol.appendChild(peaceBadge);
       }
 
-      if (tagRow.childElementCount > 0) {
-        matchDiv.appendChild(tagRow);
+      if (badgeCol.childElementCount === 0) {
+        const empty = document.createElement("span");
+        empty.className = "tag tag-empty";
+        empty.textContent = "•";
+        badgeCol.appendChild(empty);
       }
+
+      layout.appendChild(matchMain);
+      layout.appendChild(badgeCol);
+      matchDiv.appendChild(layout);
 
       if (matchToShow !== lastShownMatch) {
         matchDiv.classList.add("highlight");
