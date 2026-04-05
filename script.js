@@ -175,9 +175,13 @@ function computeStats() {
     ? playerStats.reduce((a, b) => (b.totalKills > a.totalKills ? b : a)).player
     : "N/A";
 
-  const mostConsistent = playerStats.length
-    ? playerStats.reduce((a, b) => (b.std < a.std ? b : a)).player
-    : "N/A";
+  const sharpeValid = playerStats.filter(s => s.sharpe !== null && Number.isFinite(s.sharpe));
+  const bestSharpe = sharpeValid.length
+    ? sharpeValid.reduce((a, b) => (b.sharpe > a.sharpe ? b : a))
+    : null;
+  const worstSharpe = sharpeValid.length
+    ? sharpeValid.reduce((a, b) => (b.sharpe < a.sharpe ? b : a))
+    : null;
 
   const globalAvgKills = matchesPlayed > 0 ? (teamTotalKills / matchesPlayed) : 0;
   const winRate = matchesPlayed > 0 ? (wins / matchesPlayed) * 100 : 0;
@@ -189,7 +193,8 @@ function computeStats() {
     bestPlayer,
     globalAvgKills,
     bloodiest,
-    mostConsistent,
+    bestSharpePlayer: bestSharpe ? `${bestSharpe.player} (${format1(bestSharpe.sharpe)})` : "N/A",
+    worstSharpePlayer: worstSharpe ? `${worstSharpe.player} (${format1(worstSharpe.sharpe)})` : "N/A",
     winRate
   };
 }
@@ -204,11 +209,12 @@ function renderDashboard() {
     ["Partidas Jugadas", dashboardStats.matchesPlayed],
     ["Victorias", dashboardStats.wins],
     ["Kills Totales", dashboardStats.teamTotalKills],
+    ["Mejor Jugador", dashboardStats.bestPlayer],
     ["Win Rate", `${format1(dashboardStats.winRate)}%`],
     ["Kill Promedio Global", format1(dashboardStats.globalAvgKills)],
     ["Partida más sangrienta", `${dashboardStats.bloodiest.label} (${format1(dashboardStats.bloodiest.kills)})`],
-    ["Más consistente", dashboardStats.mostConsistent],
-    ["Killer del Grupo", dashboardStats.bestPlayer]
+    ["Mayor aporte (Sharpe)", dashboardStats.bestSharpePlayer],
+    ["Menor aporte (Sharpe)", dashboardStats.worstSharpePlayer]
   ];
 
   dashboardEl.innerHTML = cards
