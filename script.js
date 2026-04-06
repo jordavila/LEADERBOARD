@@ -184,10 +184,15 @@ function computeStats() {
     return { label: compactLabels[bestIdx], kills: bestKills };
   })();
 
-  const bestPlayerStat = playerStats.length
-    ? playerStats.reduce((a, b) => (b.totalKills > a.totalKills ? b : a))
-    : null;
-  const bestPlayer = bestPlayerStat ? `${bestPlayerStat.player} (${format1(bestPlayerStat.totalKills)})` : "N/A";
+  const bestPlayer = (() => {
+    if (!playerStats.length) return "N/A";
+    const bestTotal = Math.max(...playerStats.map(s => s.totalKills));
+    const names = playerStats
+      .filter(s => s.totalKills === bestTotal)
+      .map(s => s.player)
+      .join(", ");
+    return `${names} (${formatInt(bestTotal)})`;
+  })();
 
   const recordKill = (() => {
     if (!playerStats.length || matchesPlayed === 0) return { names: "N/A", kills: 0 };
@@ -212,6 +217,7 @@ function computeStats() {
       const zeroCount = s.series.filter(v => v === 0).length;
       if (zeroCount > maxZeros) maxZeros = zeroCount;
     });
+    if (maxZeros <= 0) return { names: "N/A", zeroMatches: 0 };
     const names = playerStats
       .filter(s => s.series.filter(v => v === 0).length === maxZeros)
       .map(s => s.player)
@@ -234,7 +240,7 @@ function computeStats() {
     matchesPlayed,
     wins,
     teamTotalKills,
-    bestPlayer: bestPlayerStat ? `${bestPlayerStat.player} (${formatInt(bestPlayerStat.totalKills)})` : "N/A",
+    bestPlayer,
     globalAvgKills,
     bloodiest,
     recordKill,
