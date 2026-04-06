@@ -11,6 +11,7 @@ const container = document.getElementById("leaderboard");
 const dashboardEl = document.getElementById("dashboard");
 const summaryEl = document.getElementById("summary-table");
 const heatmapEl = document.getElementById("heatmap");
+const exportBtn = document.getElementById("export-image-btn");
 
 // estado
 let rowsTotal = []; // [{name, score}] de Sheet1 (jugadores activos)
@@ -78,6 +79,64 @@ function attachImageWithFallback(img, rawName) {
     if (idx < candidates.length) img.src = encodeURI(candidates[idx]);
   };
   img.src = encodeURI(candidates[0]);
+}
+
+function shortName(name) {
+  const cleaned = (name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+  return cleaned.slice(0, 3) || "PLY";
+}
+
+function buildExportFilename() {
+  const top = rowsTotal.slice(0, MAX_PLAYERS);
+  const token = top
+    .map(p => `${shortName(p.name)}#${formatInt(p.score)}`)
+    .join("");
+  return token || "LEADERBOARD";
+}
+
+async function exportToImage() {
+  if (typeof html2canvas === "undefined") {
+    alert("No se pudo exportar: html2canvas no está disponible.");
+    return;
+  }
+  let previousStyles = [];
+  try {
+    // Expandir temporalmente tablas con scroll para capturar todo el contenido
+    const tableWraps = Array.from(document.querySelectorAll(".table-wrap"));
+    previousStyles = tableWraps.map(el => ({
+      el,
+      overflowX: el.style.overflowX,
+      maxWidth: el.style.maxWidth
+    }));
+
+    tableWraps.forEach(el => {
+      el.style.overflowX = "visible";
+      el.style.maxWidth = "none";
+    });
+
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    const canvas = await html2canvas(document.body, {
+      backgroundColor: "#090b0f",
+      scale: window.devicePixelRatio > 1 ? 2 : 1,
+      useCORS: true
+    });
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `${buildExportFilename()}.png`;
+    a.click();
+  } catch (err) {
+    console.error(err);
+    alert(`No se pudo exportar imagen: ${err.message}`);
+  } finally {
+    previousStyles.forEach(({ el, overflowX, maxWidth }) => {
+      el.style.overflowX = overflowX;
+      el.style.maxWidth = maxWidth;
+    });
+  }
 }
 
 async function fetchSheet(url) {
@@ -636,3 +695,7 @@ setInterval(() => {
 setInterval(() => {
   cargarDatos();
 }, 30000);
+
+if (exportBtn) {
+  exportBtn.addEventListener("click", exportToImage);
+}

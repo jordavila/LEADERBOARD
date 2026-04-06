@@ -12,6 +12,27 @@ h2 {
   margin-bottom: 10px;
 }
 
+.toolbar {
+  max-width: 960px;
+  margin: 0 auto 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.export-btn {
+  background: linear-gradient(135deg, #69c9b9, #4aaea0);
+  color: #041615;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.export-btn:hover {
+  filter: brightness(1.07);
+}
+
 h3 {
   margin: 0 0 10px;
   color: #8be9f6;
