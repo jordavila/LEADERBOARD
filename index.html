@@ -8,9 +8,32 @@
 </head>
 <body>
   <h2>KILL COUNTER</h2>
+  <div class="toolbar">
+    <button id="export-image-btn" class="export-btn" type="button">Exportar imagen</button>
+  </div>
 
   <div id="leaderboard" class="leaderboard"></div>
 
+  <section class="panel-block">
+    <h2 class="section-title">Dashboard</h2>
+    <div id="dashboard" class="dashboard-grid"></div>
+  </section>
+
+  <section id="summary-table" class="panel-block"></section>
+  <section id="heatmap" class="panel-block"></section>
+
+  <section class="panel-block">
+    <h2 class="section-title">Gráficas</h2>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Kills Totales por Jugador</h3><canvas id="chart-total-kills"></canvas></div>
+      <div class="chart-card"><h3>Kills Promedio por Jugador</h3><canvas id="chart-avg-kills"></canvas></div>
+      <div class="chart-card"><h3>Evolución de Kills por Jugador</h3><canvas id="chart-trend"></canvas></div>
+      <div class="chart-card"><h3>Partidas Lideradas por Jugador</h3><canvas id="chart-led"></canvas></div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
