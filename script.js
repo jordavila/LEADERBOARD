@@ -29,6 +29,7 @@ let lastShownMatch = -1;
 let totalKillsChart = null;
 let avgKillsChart = null;
 let trendChart = null;
+let cumulativeChart = null;
 let ledChart = null;
 const PLAYER_COLORS = ["#ff3b30", "#00a2ff", "#00d26a", "#ffd60a"];
 
@@ -104,7 +105,25 @@ async function exportToImage() {
     return;
   }
   let previousStyles = [];
+  let previousToolbarHTML = "";
   try {
+    const now = new Date();
+    const dateText = now.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "UTC"
+    }).replace(",", " •");
+    const toolbar = document.querySelector(".toolbar");
+    if (toolbar) {
+      previousToolbarHTML = toolbar.innerHTML;
+      toolbar.innerHTML = `<div class="export-stamp">Exported: ${dateText} UTC</div>`;
+    }
+
     // Expandir temporalmente tablas con scroll para capturar todo el contenido
     const tableWraps = Array.from(document.querySelectorAll(".table-wrap"));
     previousStyles = tableWraps.map(el => ({
@@ -116,12 +135,13 @@ async function exportToImage() {
     tableWraps.forEach(el => {
       el.style.overflowX = "visible";
       el.style.maxWidth = "none";
+      el.style.width = "max-content";
     });
 
     await new Promise(resolve => requestAnimationFrame(resolve));
     const canvas = await html2canvas(document.body, {
       backgroundColor: "#090b0f",
-      scale: window.devicePixelRatio > 1 ? 2 : 1,
+      scale: 1.7,
       useCORS: true
     });
     const a = document.createElement("a");
@@ -135,7 +155,10 @@ async function exportToImage() {
     previousStyles.forEach(({ el, overflowX, maxWidth }) => {
       el.style.overflowX = overflowX;
       el.style.maxWidth = maxWidth;
+      el.style.width = "";
     });
+    const toolbar = document.querySelector(".toolbar");
+    if (toolbar && previousToolbarHTML) toolbar.innerHTML = previousToolbarHTML;
   }
 }
 
@@ -409,12 +432,13 @@ function renderHeatmap() {
 }
 
 function destroyCharts() {
-  [totalKillsChart, avgKillsChart, trendChart, ledChart].forEach(ch => {
+  [totalKillsChart, avgKillsChart, trendChart, cumulativeChart, ledChart].forEach(ch => {
     if (ch) ch.destroy();
   });
   totalKillsChart = null;
   avgKillsChart = null;
   trendChart = null;
+  cumulativeChart = null;
   ledChart = null;
 }
 
@@ -432,7 +456,6 @@ function renderCharts() {
 
   const labels = playerStats.map(s => s.player);
   const colors = labels.map((_, idx) => PLAYER_COLORS[idx % PLAYER_COLORS.length]);
-  const totals = playerStats.map(s => Number(format1(s.totalKills)));
   const avgs = playerStats.map(s => Number(format1(s.avg)));
   const led = playerStats.map(s => Number(format1(s.ledMatches)));
 
@@ -447,21 +470,6 @@ function renderCharts() {
       y: { ticks: { color: "#dce7e4" }, grid: { color: "rgba(255,255,255,0.08)" } }
     }
   };
-
-  totalKillsChart = new Chart(document.getElementById("chart-total-kills"), {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Kills Totales",
-        data: totals,
-        backgroundColor: colors,
-        borderColor: "#ffffff",
-        borderWidth: 1.2
-      }]
-    },
-    options: baseOpts
-  });
 
   avgKillsChart = new Chart(document.getElementById("chart-avg-kills"), {
     type: "bar",
@@ -493,6 +501,32 @@ function renderCharts() {
         pointBorderColor: colors[idx % colors.length],
         pointRadius: 3
       }))
+    },
+    options: baseOpts
+  });
+
+  cumulativeChart = new Chart(document.getElementById("chart-cumulative"), {
+    type: "line",
+    data: {
+      labels: compactLabels,
+      datasets: playerStats.map((s, idx) => {
+        let running = 0;
+        const cum = s.series.map(v => {
+          running += Number(v || 0);
+          return running;
+        });
+        return {
+          label: s.player,
+          data: cum,
+          tension: 0.25,
+          fill: false,
+          borderWidth: 2,
+          borderColor: colors[idx % colors.length],
+          pointBackgroundColor: "#ffffff",
+          pointBorderColor: colors[idx % colors.length],
+          pointRadius: 3
+        };
+      })
     },
     options: baseOpts
   });
@@ -579,6 +613,19 @@ function renderLeaderboard() {
         winBadge.className = "tag win-tag";
         winBadge.textContent = "🏆";
         badgeCol.appendChild(winBadge);
+        if (matchToShow !== lastShownMatch) {
+          for (let i = 0; i < 10; i++) {
+            const spark = document.createElement("span");
+            spark.className = "win-spark";
+            spark.style.setProperty("--dx", `${(Math.random() * 70 - 35).toFixed(1)}px`);
+            spark.style.setProperty("--dy", `${(-20 - Math.random() * 36).toFixed(1)}px`);
+            spark.style.setProperty("--d", `${(420 + Math.random() * 220).toFixed(0)}ms`);
+            spark.style.left = `${40 + Math.random() * 20}%`;
+            spark.style.top = `${52 + Math.random() * 12}%`;
+            matchDiv.appendChild(spark);
+            setTimeout(() => spark.remove(), 700);
+          }
+        }
       }
 
       const numericKill = Number.isFinite(Number(currentKill)) ? Number(currentKill) : null;
