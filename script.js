@@ -614,14 +614,15 @@ function renderLeaderboard() {
         winBadge.textContent = "🏆";
         badgeCol.appendChild(winBadge);
         if (matchToShow !== lastShownMatch) {
-          for (let i = 0; i < 10; i++) {
+          for (let i = 0; i < 40; i++) {
             const spark = document.createElement("span");
             spark.className = "win-spark";
-            spark.style.setProperty("--dx", `${(Math.random() * 70 - 35).toFixed(1)}px`);
-            spark.style.setProperty("--dy", `${(-20 - Math.random() * 36).toFixed(1)}px`);
-            spark.style.setProperty("--d", `${(420 + Math.random() * 220).toFixed(0)}ms`);
-            spark.style.left = `${40 + Math.random() * 20}%`;
-            spark.style.top = `${52 + Math.random() * 12}%`;
+            spark.style.setProperty("--dx", `${(Math.random() * 180 - 90).toFixed(1)}px`);
+            spark.style.setProperty("--dy", `${(Math.random() * 140 - 70).toFixed(1)}px`);
+            spark.style.setProperty("--d", `${(420 + Math.random() * 240).toFixed(0)}ms`);
+            spark.style.setProperty("--s", `${(0.35 + Math.random() * 1.2).toFixed(2)}`);
+            spark.style.left = `${(Math.random() * 100).toFixed(1)}%`;
+            spark.style.top = `${(Math.random() * 100).toFixed(1)}%`;
             matchDiv.appendChild(spark);
             setTimeout(() => spark.remove(), 700);
           }

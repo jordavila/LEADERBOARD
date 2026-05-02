@@ -304,7 +304,38 @@ tr:nth-child(even) td {
   background: linear-gradient(120deg, rgba(70, 44, 0, 0.75), rgba(24, 16, 0, 0.75));
   color: #ffdf83;
   position: relative;
-  animation: headerFire 2400ms ease-in-out infinite;
+  animation: none;
+  text-shadow:
+    0 0 4px rgba(255, 202, 102, 0.85),
+    0 0 10px rgba(255, 140, 0, 0.55),
+    0 0 16px rgba(255, 88, 34, 0.38);
+  overflow: visible;
+}
+
+.match-win-col::before,
+.match-win-col::after {
+  content: "";
+  position: absolute;
+  inset: -5px -4px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.match-win-col::before {
+  background:
+    radial-gradient(circle at 18% 78%, rgba(255, 199, 106, 0.30), transparent 52%),
+    radial-gradient(circle at 50% 80%, rgba(255, 124, 10, 0.24), transparent 60%),
+    radial-gradient(circle at 82% 74%, rgba(255, 91, 39, 0.20), transparent 58%);
+  filter: blur(1.4px);
+  animation: fireAura 1700ms ease-in-out infinite;
+}
+
+.match-win-col::after {
+  box-shadow:
+    0 0 8px rgba(255, 174, 66, 0.34),
+    0 0 16px rgba(255, 120, 0, 0.25),
+    0 0 24px rgba(255, 69, 0, 0.18);
+  animation: fireFlicker 1200ms ease-in-out infinite;
 }
 
 .match-win-cell {
@@ -338,23 +369,29 @@ tr:nth-child(even) td {
 
 .win-spark {
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: radial-gradient(circle, #fff5c8 0%, #ffd166 45%, #ff9f1c 100%);
+  background: radial-gradient(circle, #fff5c8 0%, #ffd166 38%, #ff9f1c 75%, #ff5f2a 100%);
   pointer-events: none;
   animation: sparkPop var(--d, 560ms) ease-out forwards;
   z-index: 3;
 }
 
 @keyframes sparkPop {
-  0% { transform: translate(0, 0) scale(1); opacity: 0.95; }
-  100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+  0% { transform: translate(0, 0) scale(var(--s, 0.8)); opacity: 0.96; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.15); opacity: 0; }
 }
 
-@keyframes headerFire {
-  0%,100% { box-shadow: inset 0 -2px 0 rgba(255, 157, 0, 0.18), 0 0 4px rgba(255, 170, 30, 0.20); }
-  50% { box-shadow: inset 0 -3px 0 rgba(255, 157, 0, 0.30), 0 0 8px rgba(255, 170, 30, 0.28); }
+@keyframes fireAura {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.72; }
+  50% { transform: translateY(-1px) scale(1.04); opacity: 0.96; }
+}
+
+@keyframes fireFlicker {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  30% { opacity: 0.82; transform: scale(1.04); }
+  65% { opacity: 0.68; transform: scale(0.98); }
 }
 
 /* Responsive */
