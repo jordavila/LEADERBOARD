@@ -99,6 +99,21 @@ function buildExportFilename() {
   return token || "LEADERBOARD";
 }
 
+function formatExportET(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/New_York",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(now);
+  const get = t => parts.find(p => p.type === t)?.value || "";
+  return `${get("day")} ${get("month")} ${get("year")} • ${get("hour")}:${get("minute")}:${get("second")} ET`;
+}
+
 async function exportToImage() {
   if (typeof html2canvas === "undefined") {
     alert("No se pudo exportar: html2canvas no está disponible.");
@@ -107,21 +122,11 @@ async function exportToImage() {
   let previousStyles = [];
   let previousToolbarHTML = "";
   try {
-    const now = new Date();
-    const dateText = now.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-      timeZone: "America/New_York"
-    }).replace(",", " •");
+    const dateText = formatExportET(new Date());
     const toolbar = document.querySelector(".toolbar");
     if (toolbar) {
       previousToolbarHTML = toolbar.innerHTML;
-      toolbar.innerHTML = `<div class="export-stamp">Exported: ${dateText} ET</div>`;
+      toolbar.innerHTML = `<div class="export-stamp">Exported: ${dateText}</div>`;
     }
 
     // Expandir temporalmente tablas con scroll para capturar todo el contenido

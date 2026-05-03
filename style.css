@@ -262,9 +262,11 @@ h3 {
 }
 
 .kpi-value {
-  font-size: 1.15rem;
+  font-size: clamp(1.3rem, 2.2vw, 1.85rem);
   font-weight: 800;
   color: #f4fffd;
+  line-height: 1.15;
+  word-break: break-word;
 }
 
 /* tablas */
