@@ -422,3 +422,45 @@ tr:nth-child(even) td {
   table { font-size: 0.82rem; }
   th, td { padding: 5px 6px; }
 }
+
+/* Ajustes exclusivos para exportación de imagen */
+body.exporting .panel-block {
+  padding: 8px;
+}
+
+body.exporting .table-wrap {
+  overflow: visible !important;
+}
+
+body.exporting #heatmap .table-wrap {
+  width: 100%;
+}
+
+body.exporting #heatmap table {
+  width: 100%;
+}
+
+body.exporting #heatmap th,
+body.exporting #heatmap td {
+  padding: 4px 5px;
+}
+
+body.exporting.export-few #heatmap table {
+  table-layout: fixed;
+}
+
+body.exporting.export-few #heatmap th,
+body.exporting.export-few #heatmap td {
+  font-size: 0.8rem;
+}
+
+body.exporting.export-mid #heatmap th,
+body.exporting.export-mid #heatmap td {
+  font-size: 0.74rem;
+}
+
+body.exporting.export-many #heatmap th,
+body.exporting.export-many #heatmap td {
+  font-size: 0.66rem;
+  padding: 3px 4px;
+}

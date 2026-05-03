@@ -135,13 +135,20 @@ async function exportToImage() {
     tableWraps.forEach(el => {
       el.style.overflowX = "visible";
       el.style.maxWidth = "none";
-      el.style.width = "max-content";
+      el.style.width = "100%";
     });
+
+    // Ajustes adaptativos de exportación según cantidad de partidas
+    const body = document.body;
+    body.classList.add("exporting");
+    if (maxMatches <= 8) body.classList.add("export-few");
+    else if (maxMatches <= 16) body.classList.add("export-mid");
+    else body.classList.add("export-many");
 
     await new Promise(resolve => requestAnimationFrame(resolve));
     const canvas = await html2canvas(document.body, {
       backgroundColor: "#090b0f",
-      scale: 1.7,
+      scale: maxMatches > 16 ? 1.45 : 1.7,
       useCORS: true
     });
     const a = document.createElement("a");
@@ -159,6 +166,8 @@ async function exportToImage() {
     });
     const toolbar = document.querySelector(".toolbar");
     if (toolbar && previousToolbarHTML) toolbar.innerHTML = previousToolbarHTML;
+    const body = document.body;
+    body.classList.remove("exporting", "export-few", "export-mid", "export-many");
   }
 }
 
