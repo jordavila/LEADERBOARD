@@ -116,12 +116,12 @@ async function exportToImage() {
       minute: "2-digit",
       second: "2-digit",
       hour12: false,
-      timeZone: "UTC"
+      timeZone: "America/New_York"
     }).replace(",", " •");
     const toolbar = document.querySelector(".toolbar");
     if (toolbar) {
       previousToolbarHTML = toolbar.innerHTML;
-      toolbar.innerHTML = `<div class="export-stamp">Exported: ${dateText} UTC</div>`;
+      toolbar.innerHTML = `<div class="export-stamp">Exported: ${dateText} ET</div>`;
     }
 
     // Expandir temporalmente tablas con scroll para capturar todo el contenido
