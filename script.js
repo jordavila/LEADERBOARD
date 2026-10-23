@@ -1,6 +1,6 @@
 const sheetID = "1K1i2yCRTwXyU_CnqZz9QvP8ykzXDB-ZNRibvEmjmLQs";
 const sheet1 = "Sheet1"; // activos + kills totales
-const sheet2 = "Sheet2"; // partidas por jugador + fila WIN
+const sheet2 = "Sheet2"; // partidas por jugador + fila Resultado (puestos)
 const url1 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${sheet1}`;
 const url2 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${sheet2}`;
 
@@ -12,11 +12,13 @@ const dashboardEl = document.getElementById("dashboard");
 const summaryEl = document.getElementById("summary-table");
 const heatmapEl = document.getElementById("heatmap");
 const exportBtn = document.getElementById("export-image-btn");
+document.getElementById("source-sheet-link").href = `https://docs.google.com/spreadsheets/d/${sheetID}/edit`;
 
 // estado
 let rowsTotal = []; // [{name, score}] de Sheet1 (jugadores activos)
 let rowsMatches = {}; // nombre_normalizado => [m1..mn] compactadas
 let winMarkers = []; // [bool] compactadas
+let matchPositions = []; // puestos válidos o null, alineados con las partidas
 let activePlayers = []; // [{name, score}]
 let compactLabels = []; // ["M1", "M2", ...] compactadas
 let playerStats = []; // stats calculadas por jugador
@@ -31,7 +33,8 @@ let avgKillsChart = null;
 let trendChart = null;
 let cumulativeChart = null;
 let ledChart = null;
-const PLAYER_COLORS = ["#ff3b30", "#00a2ff", "#00d26a", "#ffd60a"];
+let positionChart = null;
+const PLAYER_COLORS = ["#F5D21B", "#C6C5B9", "#77786D", "#F4F2E9"];
 
 function parseGviz(text) {
   // Mantener compatibilidad con la respuesta estándar de GViz
@@ -120,13 +123,17 @@ async function exportToImage() {
     return;
   }
   let previousStyles = [];
-  let previousToolbarHTML = "";
+  let previousToolbarNodes = [];
+  let exportStamp = null;
   try {
     const dateText = formatExportET(new Date());
     const toolbar = document.querySelector(".toolbar");
     if (toolbar) {
-      previousToolbarHTML = toolbar.innerHTML;
-      toolbar.innerHTML = `<div class="export-stamp">Exported: ${dateText}</div>`;
+      previousToolbarNodes = Array.from(toolbar.childNodes);
+      exportStamp = document.createElement("div");
+      exportStamp.className = "export-stamp";
+      exportStamp.textContent = `Exported: ${dateText}`;
+      toolbar.replaceChildren(exportStamp);
     }
 
     // Expandir temporalmente tablas con scroll para capturar todo el contenido
@@ -152,7 +159,7 @@ async function exportToImage() {
 
     await new Promise(resolve => requestAnimationFrame(resolve));
     const canvas = await html2canvas(document.body, {
-      backgroundColor: "#090b0f",
+      backgroundColor: "#11120F",
       scale: maxMatches > 16 ? 1.45 : 1.7,
       useCORS: true
     });
@@ -170,7 +177,7 @@ async function exportToImage() {
       el.style.width = "";
     });
     const toolbar = document.querySelector(".toolbar");
-    if (toolbar && previousToolbarHTML) toolbar.innerHTML = previousToolbarHTML;
+    if (toolbar && exportStamp) toolbar.replaceChildren(...previousToolbarNodes);
     const body = document.body;
     body.classList.remove("exporting", "export-few", "export-mid", "export-many");
   }
@@ -190,7 +197,12 @@ function stdDevPopulation(values) {
   return Math.sqrt(variance);
 }
 
-function rebuildDerivedData(rawPlayerMatches, rawWinMarkers) {
+function toPositionOrNull(value) {
+  const position = toNumberOrNull(value);
+  return Number.isInteger(position) && position >= 1 ? position : null;
+}
+
+function rebuildDerivedData(rawPlayerMatches, rawPositions) {
   const activeNames = activePlayers.map(p => p.name);
 
   // compactar partidas: solo partidas donde TODOS los activos tienen dato
@@ -211,7 +223,8 @@ function rebuildDerivedData(rawPlayerMatches, rawWinMarkers) {
     rowsMatches[normalizeName(name)] = validIndices.map(i => toNumberOrNull(src[i]) ?? 0);
   });
 
-  winMarkers = validIndices.map(i => !!rawWinMarkers[i]);
+  matchPositions = validIndices.map(i => toPositionOrNull(rawPositions[i]));
+  winMarkers = matchPositions.map(position => position === 1);
   compactLabels = validIndices.map((_, idx) => `M${idx + 1}`);
 
   maxMatches = validIndices.length;
@@ -280,15 +293,9 @@ function computeStats() {
     return { label: compactLabels[bestIdx], kills: bestKills };
   })();
 
-  const bestPlayer = (() => {
-    if (!playerStats.length) return "N/A";
-    const bestTotal = Math.max(...playerStats.map(s => s.totalKills));
-    const names = playerStats
-      .filter(s => s.totalKills === bestTotal)
-      .map(s => s.player)
-      .join(", ");
-    return `${names} (${formatInt(bestTotal)})`;
-  })();
+  // Comparar valores sin redondear; Sharpe no disponible queda detrás del válido.
+  const captain = matchesPlayed > 0 ? [...playerStats].sort(compareCaptains)[0] ?? null : null;
+  const bestPlayer = captain ? `${captain.player} (${formatInt(captain.totalKills)})` : "N/A";
 
   const recordKill = (() => {
     if (!playerStats.length || matchesPlayed === 0) return { names: "N/A", kills: 0 };
@@ -331,12 +338,18 @@ function computeStats() {
 
   const globalAvgKills = matchesPlayed > 0 ? (teamTotalKills / matchesPlayed) : 0;
   const winRate = matchesPlayed > 0 ? (wins / matchesPlayed) * 100 : 0;
+  const recordedPositions = matchPositions.filter(position => position !== null);
+  const avgPosition = recordedPositions.length
+    ? recordedPositions.reduce((sum, position) => sum + position, 0) / recordedPositions.length
+    : null;
 
   dashboardStats = {
     matchesPlayed,
     wins,
     teamTotalKills,
     bestPlayer,
+    captain,
+    avgPosition,
     globalAvgKills,
     bloodiest,
     recordKill,
@@ -345,6 +358,35 @@ function computeStats() {
     worstSharpePlayer: worstSharpe ? `${worstSharpe.player} (${format1(worstSharpe.sharpe)})` : "N/A",
     winRate
   };
+}
+
+function compareCaptains(a, b) {
+  if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
+  const aSharpe = Number.isFinite(a.sharpe) ? a.sharpe : -Infinity;
+  const bSharpe = Number.isFinite(b.sharpe) ? b.sharpe : -Infinity;
+  if (aSharpe !== bSharpe) return bSharpe > aSharpe ? 1 : -1;
+  return b.bestMatch - a.bestMatch || a.player.localeCompare(b.player);
+}
+
+function renderCaptain() {
+  const panel = document.getElementById("captain");
+  const captain = dashboardStats?.captain;
+  panel.hidden = !captain;
+  if (!captain) return;
+  const image = document.getElementById("captain-avatar");
+  const key = captain.player.trim().toUpperCase().replace(/\s+/g, "");
+  const portraits = new Set(["JADO82", "GEODUQUE", "ANDRESFU", "DANILO", "DANTE", "FREDDY", "HAROLDO", "MANQUINHO"]);
+  const src = `assets/captains/${portraits.has(key) ? key : "DEFAULT"}.png`;
+  if (image.getAttribute("src") !== src) {
+    image.onerror = () => {
+      image.onerror = null;
+      image.src = "assets/captains/DEFAULT.png";
+    };
+    image.src = src;
+  }
+  image.alt = `${captain.player}, capitán de cuerpo completo con uniforme y arma`;
+  document.getElementById("captain-name").textContent = captain.player;
+  document.getElementById("captain-stats").textContent = `${formatInt(captain.totalKills)} kills · Sharpe ${format1(captain.sharpe)} · Récord ${formatInt(captain.bestMatch)}`;
 }
 
 function renderDashboard() {
@@ -356,6 +398,7 @@ function renderDashboard() {
   const cards = [
     ["Partidas Jugadas", formatInt(dashboardStats.matchesPlayed)],
     ["Victorias", formatInt(dashboardStats.wins)],
+    ["Posición Promedio", format1(dashboardStats.avgPosition)],
     ["Kills Totales", formatInt(dashboardStats.teamTotalKills)],
     ["Mejor Jugador", dashboardStats.bestPlayer],
     ["Record Kill", `${dashboardStats.recordKill.names} (${formatInt(dashboardStats.recordKill.kills)})`],
@@ -429,7 +472,7 @@ function renderHeatmap() {
     const cells = s.series.map(v => {
       const ratio = maxVal > 0 ? (v / maxVal) : 0;
       const alpha = (0.15 + ratio * 0.7).toFixed(2);
-      return `<td style="background: rgba(105, 201, 185, ${alpha})">${formatInt(v)}</td>`;
+      return `<td style="background: rgba(119, 120, 109, ${alpha})">${formatInt(v)}</td>`;
     }).join("");
     return `<tr><td>${s.player}</td>${cells}</tr>`;
   }).join("");
@@ -439,14 +482,14 @@ function renderHeatmap() {
     <div class="table-wrap">
       <table>
         <thead><tr><th>Jugador</th>${header}</tr></thead>
-        <tbody>${body}</tbody>
+        <tbody>${body}<tr class="position-row"><th scope="row">Posición del equipo</th>${matchPositions.map(position => `<td>${position === null ? "—" : formatInt(position)}</td>`).join("")}</tr></tbody>
       </table>
     </div>
   `;
 }
 
 function destroyCharts() {
-  [totalKillsChart, avgKillsChart, trendChart, cumulativeChart, ledChart].forEach(ch => {
+  [totalKillsChart, avgKillsChart, trendChart, cumulativeChart, ledChart, positionChart].forEach(ch => {
     if (ch) ch.destroy();
   });
   totalKillsChart = null;
@@ -454,6 +497,7 @@ function destroyCharts() {
   trendChart = null;
   cumulativeChart = null;
   ledChart = null;
+  positionChart = null;
 }
 
 function renderCharts() {
@@ -477,13 +521,43 @@ function renderCharts() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: "#dce7e4" } }
+      legend: { labels: { color: "#C6C5B9" } }
     },
     scales: {
-      x: { ticks: { color: "#dce7e4" }, grid: { color: "rgba(255,255,255,0.08)" } },
-      y: { ticks: { color: "#dce7e4" }, grid: { color: "rgba(255,255,255,0.08)" } }
+      x: { ticks: { color: "#C6C5B9" }, grid: { color: "rgba(198,197,185,0.08)" } },
+      y: { ticks: { color: "#C6C5B9" }, grid: { color: "rgba(198,197,185,0.08)" } }
     }
   };
+
+  const hasPositions = matchPositions.some(position => position !== null);
+  document.getElementById("position-empty").hidden = hasPositions;
+  document.getElementById("chart-position").hidden = !hasPositions;
+  if (hasPositions) {
+    positionChart = new Chart(document.getElementById("chart-position"), {
+      type: "line",
+      data: {
+        labels: compactLabels,
+        datasets: [{
+          label: "Posición del equipo",
+          data: matchPositions,
+          borderColor: "#C6C5B9",
+          backgroundColor: "#77786D",
+          pointBackgroundColor: matchPositions.map(position => position === 1 ? "#F5D21B" : "#C6C5B9"),
+          pointRadius: 5,
+          borderWidth: 2,
+          spanGaps: false,
+          tension: 0
+        }]
+      },
+      options: {
+        ...baseOpts,
+        scales: {
+          x: baseOpts.scales.x,
+          y: { ...baseOpts.scales.y, reverse: true, min: 1, suggestedMax: 5, ticks: { color: "#C6C5B9", precision: 0 } }
+        }
+      }
+    });
+  }
 
   avgKillsChart = new Chart(document.getElementById("chart-avg-kills"), {
     type: "bar",
@@ -493,7 +567,7 @@ function renderCharts() {
         label: "Kills Promedio",
         data: avgs,
         backgroundColor: colors,
-        borderColor: "#ffffff",
+        borderColor: "#F4F2E9",
         borderWidth: 1.2
       }]
     },
@@ -511,7 +585,7 @@ function renderCharts() {
         fill: false,
         borderWidth: 2,
         borderColor: colors[idx % colors.length],
-        pointBackgroundColor: "#ffffff",
+        pointBackgroundColor: "#F4F2E9",
         pointBorderColor: colors[idx % colors.length],
         pointRadius: 3
       }))
@@ -536,7 +610,7 @@ function renderCharts() {
           fill: false,
           borderWidth: 2,
           borderColor: colors[idx % colors.length],
-          pointBackgroundColor: "#ffffff",
+          pointBackgroundColor: "#F4F2E9",
           pointBorderColor: colors[idx % colors.length],
           pointRadius: 3
         };
@@ -553,7 +627,7 @@ function renderCharts() {
         label: "Partidas lideradas",
         data: led,
         backgroundColor: colors,
-        borderColor: "#111",
+        borderColor: "#11120F",
         borderWidth: 1
       }]
     },
@@ -561,7 +635,7 @@ function renderCharts() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: "#dce7e4" } }
+        legend: { labels: { color: "#C6C5B9" } }
       }
     }
   });
@@ -725,18 +799,19 @@ async function cargarDatos() {
       rawMatches[normalizeName(name)] = arr;
     }
 
-    // fila WIN: 5 de tabla (6 en hoja)
-    const rawWin = Array(MAX_MATCHES).fill(false);
-    const winRow = allRows[4];
+    // Fila Resultado: localizar por nombre y conservar compatibilidad con fila 6.
+    const rawPositions = Array(MAX_MATCHES).fill(null);
+    const winRow = allRows.find(row => ["resultado", "resultados", "win"].includes(normalizeName(row.c?.[0]?.v))) || allRows[4];
     for (let col = 1; col <= MAX_MATCHES; col++) {
       const raw = winRow?.c?.[col]?.v;
-      rawWin[col - 1] = raw !== null && raw !== undefined && String(raw).trim() !== "";
+      rawPositions[col - 1] = toPositionOrNull(raw);
     }
 
-    rebuildDerivedData(rawMatches, rawWin);
+    rebuildDerivedData(rawMatches, rawPositions);
 
     renderLeaderboard();
     renderDashboard();
+    renderCaptain();
     renderPlayerSummaryTable();
     renderHeatmap();
     renderCharts();
@@ -761,3 +836,4 @@ setInterval(() => {
 if (exportBtn) {
   exportBtn.addEventListener("click", exportToImage);
 }
+

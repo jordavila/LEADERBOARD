@@ -10,9 +10,18 @@
   <h2>KILL COUNTER</h2>
   <div class="toolbar">
     <button id="export-image-btn" class="export-btn" type="button">Exportar imagen</button>
+    <a id="source-sheet-link" class="source-btn" target="_blank" rel="noopener noreferrer">Abrir Google Sheets ↗</a>
   </div>
 
-  <div id="leaderboard" class="leaderboard"></div>
+  <section class="hero" aria-label="Clasificación del equipo">
+    <aside id="captain" class="captain" hidden>
+      <div class="captain-stage"><img id="captain-avatar" class="captain-avatar" alt="" /></div>
+      <div class="captain-label">CAPITÁN DEL EQUIPO</div>
+      <div id="captain-name" class="captain-name"></div>
+      <div id="captain-stats" class="captain-stats"></div>
+    </aside>
+    <div id="leaderboard" class="leaderboard"></div>
+  </section>
 
   <section class="panel-block">
     <h2 class="section-title">Dashboard</h2>
@@ -25,6 +34,7 @@
   <section class="panel-block">
     <h2 class="section-title">Gráficas</h2>
     <div class="charts-grid">
+      <div class="chart-card chart-wide"><h3>Posición del equipo por partida</h3><p class="chart-note">Más cerca de 1, mejor. Se omiten los resultados vacíos.</p><canvas id="chart-position" role="img" aria-label="Posición del equipo en cada partida"></canvas><p id="position-empty" class="empty-note" hidden>Sin posiciones registradas.</p></div>
       <div class="chart-card"><h3>Evolución de Kills por Jugador</h3><canvas id="chart-trend"></canvas></div>
       <div class="chart-card"><h3>Kills Acumuladas por Jugador</h3><canvas id="chart-cumulative"></canvas></div>
       <div class="chart-card"><h3>Kills Promedio por Jugador</h3><canvas id="chart-avg-kills"></canvas></div>
@@ -37,3 +47,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
