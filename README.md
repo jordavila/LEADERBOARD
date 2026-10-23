@@ -13,13 +13,15 @@ Dashboard estático del equipo, conectado a Google Sheets y publicado mediante G
 
 ## Capitán
 
-El mejor jugador se elige por kills acumuladas en las partidas completas, luego por Sharpe grupal sin redondear y luego por su récord de kills en una sola partida. Un Sharpe no disponible queda detrás de uno válido. Si también empatan en el récord, se usa orden alfabético para que el avatar sea estable. Sin partidas completas no se muestra capitán.
+El mejor jugador se elige por kills acumuladas en las partidas completas, luego por Sharpe grupal sin redondear y luego por su récord de kills en una sola partida. Un Sharpe no disponible queda detrás de uno válido. Si también empatan en el récord, el título se comparte y se muestran todos los avatares empatados, hasta cuatro. El nombre no se usa como desempate. Sin partidas completas no se muestra capitán.
 
 Los avatares de cuerpo completo están en `assets/captains/`. Se crearon con ImageGen usando los retratos existentes como referencia. JOSEVEGA, POTRANCO y SNEYDER comparten el retrato original `DEFAULT`, por lo que usan también el capitán genérico. La animación es CSS: respiración y balanceo leves, desactivados al exportar y cuando el dispositivo solicita movimiento reducido.
 
 ## Diseño y gráficos
 
 Paleta: `#11120F`, `#292B27`, `#77786D`, `#C6C5B9`, `#F4F2E9` y acento `#F5D21B`.
+
+Los gráficos usan amarillo, gris arena, oliva y cobre apagado `#B9825A` para distinguir al cuarto jugador. Cada nombre se presenta completo en su propia línea; el tamaño de fuente se ajusta al ancho real del texto y se recalcula al cambiar el tamaño de la ventana. Los valores numéricos de las tarjetas con nombres se muestran en una línea separada.
 
 Se mantienen los gráficos de kills y partidas lideradas. El gráfico de posición muestra el puesto 1 arriba, marca las victorias en amarillo y deja huecos para resultados desconocidos. El heatmap incluye una fila de posiciones.
 
@@ -33,4 +35,3 @@ python -m http.server 8765
 ```
 
 Abrir `http://localhost:8765`. Chart.js y html2canvas se cargan desde el CDN existente. La exportación conserva los botones originales para permitir descargas repetidas.
-

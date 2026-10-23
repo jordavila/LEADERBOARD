@@ -34,7 +34,7 @@ let trendChart = null;
 let cumulativeChart = null;
 let ledChart = null;
 let positionChart = null;
-const PLAYER_COLORS = ["#F5D21B", "#C6C5B9", "#77786D", "#F4F2E9"];
+const PLAYER_COLORS = ["#F5D21B", "#C6C5B9", "#77786D", "#B9825A"];
 
 function parseGviz(text) {
   // Mantener compatibilidad con la respuesta estándar de GViz
@@ -294,8 +294,10 @@ function computeStats() {
   })();
 
   // Comparar valores sin redondear; Sharpe no disponible queda detrás del válido.
-  const captain = matchesPlayed > 0 ? [...playerStats].sort(compareCaptains)[0] ?? null : null;
-  const bestPlayer = captain ? `${captain.player} (${formatInt(captain.totalKills)})` : "N/A";
+  const captains = matchesPlayed > 0 ? selectCaptains(playerStats) : [];
+  const bestPlayer = captains.length
+    ? `${captains.map(captain => captain.player).join(", ")} (${formatInt(captains[0].totalKills)})`
+    : "N/A";
 
   const recordKill = (() => {
     if (!playerStats.length || matchesPlayed === 0) return { names: "N/A", kills: 0 };
@@ -348,7 +350,7 @@ function computeStats() {
     wins,
     teamTotalKills,
     bestPlayer,
-    captain,
+    captains,
     avgPosition,
     globalAvgKills,
     bloodiest,
@@ -365,30 +367,95 @@ function compareCaptains(a, b) {
   const aSharpe = Number.isFinite(a.sharpe) ? a.sharpe : -Infinity;
   const bSharpe = Number.isFinite(b.sharpe) ? b.sharpe : -Infinity;
   if (aSharpe !== bSharpe) return bSharpe > aSharpe ? 1 : -1;
-  return b.bestMatch - a.bestMatch || a.player.localeCompare(b.player);
+  return b.bestMatch - a.bestMatch;
+}
+
+function selectCaptains(stats) {
+  const ranked = [...stats].sort(compareCaptains);
+  return ranked.length ? ranked.filter(player => compareCaptains(player, ranked[0]) === 0).slice(0, MAX_PLAYERS) : [];
 }
 
 function renderCaptain() {
   const panel = document.getElementById("captain");
-  const captain = dashboardStats?.captain;
-  panel.hidden = !captain;
-  if (!captain) return;
-  const image = document.getElementById("captain-avatar");
-  const key = captain.player.trim().toUpperCase().replace(/\s+/g, "");
+  const captains = dashboardStats?.captains || [];
+  panel.hidden = captains.length === 0;
+  panel.parentElement?.classList.toggle("shared-captains", captains.length > 1);
+  // Keep existing image nodes on refresh so animations do not restart every 30s.
+  const signature = JSON.stringify(captains.map(({ player, totalKills, sharpe, bestMatch }) => ({ player, totalKills, sharpe, bestMatch })));
+  if (panel.dataset.signature === signature) return;
+  panel.dataset.signature = signature;
+  panel.style.setProperty("--captain-count", captains.length);
+  panel.replaceChildren();
+  if (!captains.length) return;
   const portraits = new Set(["JADO82", "GEODUQUE", "ANDRESFU", "DANILO", "DANTE", "FREDDY", "HAROLDO", "MANQUINHO"]);
   const uprightPortraits = new Set(["JADO82", "MANQUINHO", "ANDRESFU", "HAROLDO"]);
-  const portrait = portraits.has(key) ? key : "DEFAULT";
-  const src = `assets/captains/${portrait}${uprightPortraits.has(portrait) ? "-v2" : ""}.png`;
-  if (image.getAttribute("src") !== src) {
+  captains.forEach(captain => {
+    const card = document.createElement("article");
+    card.className = "captain-card";
+    const stage = document.createElement("div");
+    stage.className = "captain-stage";
+    const image = document.createElement("img");
+    image.className = "captain-avatar";
+    const key = captain.player.trim().toUpperCase().replace(/\s+/g, "");
+    const portrait = portraits.has(key) ? key : "DEFAULT";
     image.onerror = () => {
       image.onerror = null;
       image.src = "assets/captains/DEFAULT.png";
     };
-    image.src = src;
+    image.src = `assets/captains/${portrait}${uprightPortraits.has(portrait) ? "-v2" : ""}.png`;
+    image.alt = `${captain.player}, capitán de cuerpo completo con uniforme y arma`;
+    const label = document.createElement("div");
+    label.className = "captain-label";
+    label.textContent = captains.length > 1 ? "MEJOR JUGADOR · COMPARTIDO" : "CAPITÁN DEL EQUIPO";
+    const name = document.createElement("div");
+    name.className = "captain-name fit-text";
+    name.textContent = captain.player;
+    const stats = document.createElement("div");
+    stats.className = "captain-stats";
+    stats.textContent = `${formatInt(captain.totalKills)} kills · Sharpe ${format1(captain.sharpe)} · Récord ${formatInt(captain.bestMatch)}`;
+    stage.appendChild(image);
+    card.appendChild(stage);
+    card.appendChild(label);
+    card.appendChild(name);
+    card.appendChild(stats);
+    panel.appendChild(card);
+  });
+  scheduleTextFit();
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+}
+
+function formatKpiValue(value) {
+  const match = String(value).match(/^(.*?)\s+\(([^()]*)\)$/);
+  if (!match) return `<span class="fit-text">${escapeHTML(value)}</span>`;
+  return match[1].split(/,\s*/).map(name => `<span class="kpi-name fit-text">${escapeHTML(name)}</span>`).join("")
+    + `<span class="kpi-detail fit-text">(${escapeHTML(match[2])})</span>`;
+}
+
+function fitTextToWidth(element) {
+  element.style.fontSize = "";
+  const width = element.clientWidth;
+  if (!width) return;
+  const maximum = parseFloat(getComputedStyle(element).fontSize);
+  if (element.scrollWidth <= width) return;
+  let low = 1;
+  let high = maximum;
+  // Measure actual rendered text instead of assuming every character is equally wide.
+  for (let i = 0; i < 10; i++) {
+    const size = (low + high) / 2;
+    element.style.fontSize = `${size}px`;
+    if (element.scrollWidth > width) high = size;
+    else low = size;
   }
-  image.alt = `${captain.player}, capitán de cuerpo completo con uniforme y arma`;
-  document.getElementById("captain-name").textContent = captain.player;
-  document.getElementById("captain-stats").textContent = `${formatInt(captain.totalKills)} kills · Sharpe ${format1(captain.sharpe)} · Récord ${formatInt(captain.bestMatch)}`;
+  element.style.fontSize = `${Math.floor(low * 10) / 10}px`;
+}
+
+function scheduleTextFit() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".fit-text, .entry .name").forEach(fitTextToWidth);
+  });
 }
 
 function renderDashboard() {
@@ -402,7 +469,7 @@ function renderDashboard() {
     ["Victorias", formatInt(dashboardStats.wins)],
     ["Posición Promedio", format1(dashboardStats.avgPosition)],
     ["Kills Totales", formatInt(dashboardStats.teamTotalKills)],
-    ["Mejor Jugador", dashboardStats.bestPlayer],
+    [dashboardStats.captains.length > 1 ? "Mejor Jugador · compartido" : "Mejor Jugador", dashboardStats.bestPlayer],
     ["Record Kill", `${dashboardStats.recordKill.names} (${formatInt(dashboardStats.recordKill.kills)})`],
     ["Pacifista", `${dashboardStats.pacifist.names} (${formatInt(dashboardStats.pacifist.zeroMatches)})`],
     ["Win Rate", `${format1(dashboardStats.winRate)}%`],
@@ -416,10 +483,11 @@ function renderDashboard() {
     .map(([title, value]) => `
       <div class="kpi-card">
         <div class="kpi-title">${title}</div>
-        <div class="kpi-value">${value}</div>
+        <div class="kpi-value">${formatKpiValue(value)}</div>
       </div>
     `)
     .join("");
+  scheduleTextFit();
 }
 
 function renderPlayerSummaryTable() {
@@ -766,6 +834,7 @@ function renderLeaderboard() {
   });
 
   lastShownMatch = (maxMatches > 0 ? (currentMatchIndex % maxMatches) : -1);
+  scheduleTextFit();
 }
 
 async function cargarDatos() {
@@ -838,3 +907,6 @@ setInterval(() => {
 if (exportBtn) {
   exportBtn.addEventListener("click", exportToImage);
 }
+
+if (typeof window !== "undefined") window.addEventListener("resize", scheduleTextFit);
+document.fonts?.ready.then(scheduleTextFit);

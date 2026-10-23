@@ -536,3 +536,30 @@ body.exporting .captain-avatar { animation: none; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
 
+/* Preserve each complete name and shrink its font to the available width. */
+.fit-text, .entry .name {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.kpi-value { min-width: 0; word-break: normal; overflow-wrap: normal; }
+.kpi-name { margin-bottom: 3px; }
+.kpi-detail { color: var(--sand); font-size: .8em; margin-top: 5px; }
+.captain-card { min-width: 0; width: 100%; }
+.captain-name { overflow-wrap: normal; }
+.hero.shared-captains { flex-direction: column; gap: 22px; }
+.shared-captains .captain {
+  width: 100%; flex: 0 0 auto; display: grid;
+  grid-template-columns: repeat(var(--captain-count, 2), minmax(0, 1fr)); gap: 18px;
+}
+.shared-captains .captain-avatar { max-width: 100%; }
+.shared-captains .captain-stage, .shared-captains .captain-avatar { height: 255px; }
+.shared-captains .captain-label { font-size: .6rem; letter-spacing: .06em; }
+@media (max-width: 600px) {
+  .shared-captains .captain { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
+  .shared-captains .captain-stage, .shared-captains .captain-avatar { height: 220px; }
+  .shared-captains .captain-name { font-size: 1.15rem; }
+}
