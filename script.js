@@ -376,7 +376,9 @@ function renderCaptain() {
   const image = document.getElementById("captain-avatar");
   const key = captain.player.trim().toUpperCase().replace(/\s+/g, "");
   const portraits = new Set(["JADO82", "GEODUQUE", "ANDRESFU", "DANILO", "DANTE", "FREDDY", "HAROLDO", "MANQUINHO"]);
-  const src = `assets/captains/${portraits.has(key) ? key : "DEFAULT"}.png`;
+  const uprightPortraits = new Set(["JADO82", "MANQUINHO", "ANDRESFU", "HAROLDO"]);
+  const portrait = portraits.has(key) ? key : "DEFAULT";
+  const src = `assets/captains/${portrait}${uprightPortraits.has(portrait) ? "-v2" : ""}.png`;
   if (image.getAttribute("src") !== src) {
     image.onerror = () => {
       image.onerror = null;
@@ -836,4 +838,3 @@ setInterval(() => {
 if (exportBtn) {
   exportBtn.addEventListener("click", exportToImage);
 }
-
