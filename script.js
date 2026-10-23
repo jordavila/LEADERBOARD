@@ -610,9 +610,9 @@ function renderCharts() {
         datasets: [{
           label: "Posición del equipo",
           data: matchPositions,
-          borderColor: "#C6C5B9",
-          backgroundColor: "#77786D",
-          pointBackgroundColor: matchPositions.map(position => position === 1 ? "#F5D21B" : "#C6C5B9"),
+          borderColor: "#F5D21B",
+          backgroundColor: "#F5D21B",
+          pointBackgroundColor: "#F5D21B",
           pointRadius: 5,
           borderWidth: 2,
           spanGaps: false,
